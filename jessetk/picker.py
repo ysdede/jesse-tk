@@ -32,7 +32,7 @@ class picker:
         self.sort_criterias = ('pnl1', 'pnl2', 'wr1', 'wr2')
         pnl1, pnl2, wr1, wr2 = 3, 6, 1, 4
 
-        self.sort_criterias_dict = {'pnl1': pnl1, 'pnl2': pnl2, 'wr1': wr1, 'wr2': wr2}
+        self.sort_by = {'pnl1': pnl1, 'pnl2': pnl2, 'wr1': wr1, 'wr2': wr2}
 
         self.criteria = criteria.lower()
         # Accept only 'pnl1', 'pnl2', 'wr1', 'wr2' as sort criteria, if it's not in list use pnl1 as default.
@@ -72,17 +72,17 @@ class picker:
         return rows
 
     def create_sorted_groups(self):
-        self.sorted_by_pnl1 = sort_array_by_key(self.rows, self.sort_criterias_dict['pnl1'])
-        self.sorted_by_pnl2 = sort_array_by_key(self.rows, self.sort_criterias_dict['pnl2'])
-        self.sorted_by_wr1 = sort_array_by_key(self.rows, self.sort_criterias_dict['wr1'])
-        self.sorted_by_wr2 = sort_array_by_key(self.rows, self.sort_criterias_dict['wr2'])
+        self.sorted_by_pnl1 = sort_array_by_key(self.rows, self.sort_by['pnl1'])
+        self.sorted_by_pnl2 = sort_array_by_key(self.rows, self.sort_by['pnl2'])
+        self.sorted_by_wr1 = sort_array_by_key(self.rows, self.sort_by['wr1'])
+        self.sorted_by_wr2 = sort_array_by_key(self.rows, self.sort_by['wr2'])
 
     def sortdnas(self):
         # read log file to log_body variable
         self.read_log()  # log_body = self.read_log(inputfile)
 
         # Extract useful information from log file, return as 2d array
-        self.rows = self.pick_lines()  # rows = self.pick_lines(log_body)
+        self.rows = self.pick_lines()
 
         # Get values from last iteration as extra
         self.fit_rows = self.pick_lines(30)
@@ -158,9 +158,9 @@ class picker:
         #     sortkey = 4
 
         # print(f'*{criteria}* *{sortkey}*')
-        self.besties = sort_array_by_key(self.besties, self.sort_criterias_dict[
-            self.criteria])  # sorted(besties, key=lambda x: int(x[sort_criterias_dict[criteria]]), reverse=True)
-        # print(besties)
+        self.besties = sort_array_by_key(self.besties, self.sort_by[self.criteria])
+        # sorted(besties, key=lambda x: int(x[sort_criterias_dict[criteria]]), reverse=True)
+
         print(f'Picked dnas count: {len(self.besties)}')
 
         # return self.besties

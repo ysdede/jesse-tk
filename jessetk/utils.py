@@ -27,6 +27,26 @@ def split_n_of_longs_shorts(line):
     return longs, shorts
 
 
+def print_tops_formatted(frmt, header1, header2, tr):
+    print(
+        frmt.format(*header1))
+    print(
+        frmt.format(*header2))
+
+    for r in tr:
+        print(
+            frmt.format(
+                r['dna'], r['total_trades'],
+                r['n_of_longs'], r['n_of_shorts'],
+                r['total_profit'], r['max_dd'],
+                r['annual_return'], r['win_rate'],
+                r['serenity'], r['sharpe'], r['calmar'],
+                r['win_strk'], r['lose_strk'],
+                r['largest_win'], r['largest_lose'],
+                r['n_of_wins'], r['n_of_loses'],
+                r['paid_fees'], r['market_change']))
+
+
 def get_metrics3(console_output) -> dict:
     import jessetk.Vars
     metrics = jessetk.Vars.Metrics
@@ -119,4 +139,8 @@ def read_file(fn):
 
 def remove_file(fn):
     if os.path.exists(fn):
-        os.remove(fn)
+        try:
+            os.remove(fn)
+        except:
+            print(f'Failed to remove file {fn}')
+            exit()
