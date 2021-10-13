@@ -221,48 +221,46 @@ def run(_start_date, _finish_date, _iterations, _width):
 
     reportfilename = f'{jessepickerdir}/results/{filename}--{ts}.csv'
     logfilename = f'{jessepickerdir}/logs/{filename}--{ts}.log'
-    f = open(logfilename, 'w')
-    f.write(str(csvheader) + '\n')
+    with open(logfilename, 'w') as f:
+        f.write(str(csvheader) + '\n')
 
-    print('Please wait while loading candles...')
+        print('Please wait while loading candles...')
 
-    start = timer()
-    randomnumbers = []
-    for index in range(1, numofiterations + 1):
-        # print(dnac[0])
-        # Inject dna to routes.py
-        # makeroutes(exc=exchange, pai=symbol, tf=timeframe, stra=strategy, dnacode=dnac[0])
-        # makestrat(_strat=strategy, _key=key, _dna=dnaindex)
-        startdate, enddate, randomnumbers = makerandomperiod(width, randomnumbers, rand_end, fd, timeframe)
-        # Run jesse backtest and grab console output
-        ress = runtest(_startdate=startdate, _enddate=enddate, _pair=symbol, _tf=timeframe)
-        print(ress)
+        start = timer()
+        randomnumbers = []
+        for index in range(1, numofiterations + 1):
+            # print(dnac[0])
+            # Inject dna to routes.py
+            # makeroutes(exc=exchange, pai=symbol, tf=timeframe, stra=strategy, dnacode=dnac[0])
+            # makestrat(_strat=strategy, _key=key, _dna=dnaindex)
+            startdate, enddate, randomnumbers = makerandomperiod(width, randomnumbers, rand_end, fd, timeframe)
+            # Run jesse backtest and grab console output
+            ress = runtest(_startdate=startdate, _enddate=enddate, _pair=symbol, _tf=timeframe)
+            print(ress)
 
-        results.append(ress)
+            results.append(ress)
 
-        # print(ress)
-        f.write(str(ress) + '\n')
-        f.flush()
-        sortedresults = sorted(results, key=lambda x: float(x[10]), reverse=True)
+            # print(ress)
+            f.write(str(ress) + '\n')
+            f.flush()
+            sortedresults = sorted(results, key=lambda x: float(x[10]), reverse=True)
 
-        clearConsole()
-        rt = ((timer() - start) / index) * (numofiterations - index)
-        rtformatted = strftime("%H:%M:%S", gmtime(rt))
-        print(f'{index}/{numofiterations}\tRemaining Time: {rtformatted}')
+            clearConsole()
+            rt = ((timer() - start) / index) * (numofiterations - index)
+            rtformatted = strftime("%H:%M:%S", gmtime(rt))
+            print(f'{index}/{numofiterations}\tRemaining Time: {rtformatted}')
 
-        print(
-            formatter.format(*header1))
-        print(
-            formatter.format(*header2))
-        topresults = sortedresults[0:40]
-        for r in topresults:
             print(
-                formatter.format(*r))
-        delta = timer() - start
-    # Sync and close log file
-    os.fsync(f.fileno())
-    f.close()
-
+                formatter.format(*header1))
+            print(
+                formatter.format(*header2))
+            topresults = sortedresults[0:40]
+            for r in topresults:
+                print(
+                    formatter.format(*r))
+            delta = timer() - start
+        # Sync and close log file
+        os.fsync(f.fileno())
     createreport(reportfilename, csvheader, sortedresults)
 
 

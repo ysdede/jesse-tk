@@ -24,28 +24,25 @@ def make_routes(template, symbol):
     if os.path.exists('routes.py'):
         os.remove('routes.py')
 
-    f = open('routes.py', 'w', encoding='utf-8')
-    f.write(template)
-    f.flush()
-    os.fsync(f.fileno())
-    f.close()
+    with open('routes.py', 'w', encoding='utf-8') as f:
+        f.write(template)
+        f.flush()
+        os.fsync(f.fileno())
 
 
 def write_file(_fn, _body):
     if os.path.exists(_fn):
         os.remove(_fn)
 
-    f = open(_fn, 'w', encoding='utf-8')
-    f.write(_body)
-    f.flush()
-    os.fsync(f.fileno())
-    f.close()
+    with open(_fn, 'w', encoding='utf-8') as f:
+        f.write(_body)
+        f.flush()
+        os.fsync(f.fileno())
 
 
 def read_file(_file):
-    ff = open(_file, 'r', encoding='utf-8')
-    _body = ff.read()
-    ff.close()
+    with open(_file, 'r', encoding='utf-8') as ff:
+        _body = ff.read()
     return _body
 
 
@@ -211,111 +208,104 @@ def run(_start_date, _finish_date):
 
     reportfilename = f'{jessepickerdir}/results/{filename}--{ts}.csv'
     logfilename = f'{jessepickerdir}/logs/{filename}--{ts}.log'
-    f = open(logfilename, 'w', encoding='utf-8')
-    f.write(str(headerforfiles) + '\n')
+    with open(logfilename, 'w', encoding='utf-8') as f:
+        f.write(str(headerforfiles) + '\n')
 
-    print('Please wait while loading candles...')
+        print('Please wait while loading candles...')
 
-    # Read routes.py as template
-    global routes_template
-    routes_template = read_file('routes.py')
-    pairs_list = None
+        # Read routes.py as template
+        global routes_template
+        routes_template = read_file('routes.py')
+        pairs_list = None
 
-    try:
-        import jessepicker.pairs
-    except:
-        print('Can not import pairs!')
-        exit()
+        try:
+            import jessepicker.pairs
+        except:
+            print('Can not import pairs!')
+            exit()
 
-    if exchange == 'Binance Futures':
-        pairs_list = jessepicker.pairs.binance_perp_pairs
-        print('Binance Futures all symbols')
+        if exchange == 'Binance Futures':
+            pairs_list = jessepicker.pairs.binance_perp_pairs
+            print('Binance Futures all symbols')
 
-    elif exchange == 'Binance':
-        pairs_list = jessepicker.pairs.binance_spot_pairs
-        print('Binance Spot symbols')
+        elif exchange == 'Binance':
+            pairs_list = jessepicker.pairs.binance_spot_pairs
+            print('Binance Spot symbols')
 
-    elif exchange == 'FTX Futures':
-        pairs_list = jessepicker.pairs.ftx_perp_pairs
-        print('FTX Futures all symbols!')
-    else:
-        print('Unsupported exchange or broken routes file! Exchange = ', exchange)
-        exit()
+        elif exchange == 'FTX Futures':
+            pairs_list = jessepicker.pairs.ftx_perp_pairs
+            print('FTX Futures all symbols!')
+        else:
+            print('Unsupported exchange or broken routes file! Exchange = ', exchange)
+            exit()
 
-    if not pairs_list:
-        print('pairs_list is empty!')
-        exit()
+        if not pairs_list:
+            print('pairs_list is empty!')
+            exit()
 
-    num_of_pairs = len(pairs_list)
+        num_of_pairs = len(pairs_list)
 
-    start = timer()
+        start = timer()
 
-    for index, pair in enumerate(pairs_list, start=1):
-        make_routes(routes_template, pair)
+        for index, pair in enumerate(pairs_list, start=1):
+            make_routes(routes_template, pair)
 
-        # Run jesse backtest and grab console output
+            # Run jesse backtest and grab console output
 
-        ress = runtest(_start_date=_start_date, _finish_date=_finish_date, _pair=pair, _tf=timeframe, symbol=pair)
+            ress = runtest(_start_date=_start_date, _finish_date=_finish_date, _pair=pair, _tf=timeframe, symbol=pair)
 
-        if ress not in results:
-            results.append(ress)
+            if ress not in results:
+                results.append(ress)
 
-        f.write(str(ress) + '\n')
-        f.flush()
-        sortedresults = sorted(results, key=lambda x: float(x[12]), reverse=True)
+            f.write(str(ress) + '\n')
+            f.flush()
+            sortedresults = sorted(results, key=lambda x: float(x[12]), reverse=True)
 
-        clearConsole()
-        rt = ((timer() - start) / index) * (num_of_pairs - index)
-        rtformatted = strftime("%H:%M:%S", gmtime(rt))
-        print(f'{index}/{num_of_pairs}\tRemaining Time: {rtformatted}')
+            clearConsole()
+            rt = ((timer() - start) / index) * (num_of_pairs - index)
+            rtformatted = strftime("%H:%M:%S", gmtime(rt))
+            print(f'{index}/{num_of_pairs}\tRemaining Time: {rtformatted}')
 
-        print(
-            formatter.format(*header1))
-        print(
-            formatter.format(*header2))
-        topresults = sortedresults[0:30]
-        # print(topresults)
-        for r in topresults:
             print(
-                formatter.format(*r))
-        delta = timer() - start
+                formatter.format(*header1))
+            print(
+                formatter.format(*header2))
+            topresults = sortedresults[0:30]
+            # print(topresults)
+            for r in topresults:
+                print(
+                    formatter.format(*r))
+            delta = timer() - start
 
-    # Restore routes.py
-    write_file('routes.py', routes_template)
+        # Restore routes.py
+        write_file('routes.py', routes_template)
 
-    # Sync and close log file
-    os.fsync(f.fileno())
-    f.close()
-
-    # Create csv report
-    # TODO: Pick better csv escape character, standart ',' fails sometimes
-    f = open(reportfilename, 'w', encoding='utf-8')
-    f.write(str(headerforfiles).replace('[', '').replace(']', '').replace(' ', '') + '\n')
-    for srline in sortedresults:
-        f.write(str(srline).replace('[', '').replace(']', '').replace(' ', '') + '\n')
-    os.fsync(f.fileno())
-    f.close()
-
+        # Sync and close log file
+        os.fsync(f.fileno())
+    with open(reportfilename, 'w', encoding='utf-8') as f:
+        f.write(str(headerforfiles).replace('[', '').replace(']', '').replace(' ', '') + '\n')
+        for srline in sortedresults:
+            f.write(str(srline).replace('[', '').replace(']', '').replace(' ', '') + '\n')
+        os.fsync(f.fileno())
     # Rewrite dnas.py, sorted by calmar
     symbol_fn = f'{jessepickerdir}/pairfiles/{pair} {_start_date} {_finish_date}.py'
     if os.path.exists(symbol_fn):
         os.remove(symbol_fn)
 
-    f = open(symbol_fn, 'w', encoding='utf-8')
-    f.write('dnas = [\n')
+    with open(symbol_fn, 'w', encoding='utf-8') as f:
+        f.write('dnas = [\n')
 
-    sorteddnas = []
-    for srr in sortedresults:
-        for pair in pairs_list:
-            # print(srr[2], dnac[0], 'DNAC:', dnac)
-            if srr[2] == pair[0]:
-                # f.write(str(dnac) + ',\n')
-                # f.write(str(dnac).replace("""['""", """[r'""") + ',\n')
-                # f.write(str(dnac).replace("""\n['""", """\n[r'""") + ',\n')
-                f.write(str(pair) + ',\n')
-                # sorteddnas.append(dnac)
+        sorteddnas = []
+        for srr in sortedresults:
+            for pair in pairs_list:
+                # print(srr[2], dnac[0], 'DNAC:', dnac)
+                if srr[2] == pair[0]:
+                    # f.write(str(dnac) + ',\n')
+                    # f.write(str(dnac).replace("""['""", """[r'""") + ',\n')
+                    # f.write(str(dnac).replace("""\n['""", """\n[r'""") + ',\n')
+                    f.write(str(pair) + ',\n')
+                    # sorteddnas.append(dnac)
 
-    f.write(']\n')
-    f.flush()
-    os.fsync(f.fileno())
-    f.close()
+        f.write(']\n')
+        f.flush()
+        os.fsync(f.fileno())
