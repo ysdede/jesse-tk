@@ -9,10 +9,10 @@ import click
 import jesse.helpers as jh
 from jesse.helpers import get_config
 
-from jessetk import timemachine, utils, Vars
+from jessetk import randomwalk, utils, Vars
 
 # Python version validation.
-# from jessepicker import timemachine
+# from jessepicker import random
 # from jessepicker.dnasorter import sortdnas, valideoutputfile
 # from jessetk.pick import sortdnas, validate_output_file
 
@@ -178,6 +178,8 @@ def random(start_date: str, finish_date: str, iterations: int, days: int) -> Non
     os.chdir(os.getcwd())
     validate_cwd()
     validateconfig()
+    makedirs()
+
     from jesse.routes import router
     import jesse.helpers as jh
 
@@ -197,8 +199,7 @@ def random(start_date: str, finish_date: str, iterations: int, days: int) -> Non
 
     width = (24 / (jh.timeframe_to_one_minutes(timeframe) / 60)) * days
 
-    makedirs()
-    timemachine.run(_start_date=start_date, _finish_date=finish_date, _iterations=iterations, _width=width)
+    randomwalk.run(_start_date=start_date, _finish_date=finish_date, _iterations=iterations, _width=width)
 
 
 # // *
@@ -268,13 +269,13 @@ def testpairs(start_date: str, finish_date: str) -> None:
 
 
 def makedirs():
-    jessetkdir = 'jessetkdata'
+    from jessetk.Vars import datadir
 
-    os.makedirs(f'./{jessetkdir}', exist_ok=True)
-    os.makedirs(f'./{jessetkdir}/results', exist_ok=True)
-    os.makedirs(f'./{jessetkdir}/logs', exist_ok=True)
-    os.makedirs(f'./{jessetkdir}/dnafiles', exist_ok=True)
-    os.makedirs(f'./{jessetkdir}/pairfiles', exist_ok=True)
+    os.makedirs(f'./{datadir}', exist_ok=True)
+    os.makedirs(f'./{datadir}/results', exist_ok=True)
+    os.makedirs(f'./{datadir}/logs', exist_ok=True)
+    os.makedirs(f'./{datadir}/dnafiles', exist_ok=True)
+    os.makedirs(f'./{datadir}/pairfiles', exist_ok=True)
 
 
 def validateconfig():  # TODO Modify config without user interaction!

@@ -29,7 +29,6 @@ def run():
         sorted_list = sorted(cnt.items(), key=lambda x: x[1], reverse=True)
         sorted_list = sorted_list[0:20]
 
-
         for k in cnt:
             print(k, round(cnt[k], 2))
 
@@ -51,8 +50,6 @@ def run():
                         # print(row[2], row[10], row[11])
                         if row[2] == k and float(row[11]) > 2.5:
                             print(row)
-
-
 
             # for row in data[1:]:
             #     print(row[2], row[10], row[11])

@@ -10,8 +10,7 @@ from timeit import default_timer as timer
 import jesse.helpers as jh
 from jesse.config import config
 from jesse.routes import router
-
-jessepickerdir = 'jessepickerdata'
+from jessetk.Vars import datadir
 
 
 def split(_str):
@@ -219,8 +218,8 @@ def run(_start_date, _finish_date, _iterations, _width):
 
     filename = f'{exchange}-{timeframe}--{ts}'
 
-    reportfilename = f'{jessepickerdir}/results/{filename}--{ts}.csv'
-    logfilename = f'{jessepickerdir}/logs/{filename}--{ts}.log'
+    reportfilename = f'{datadir}/results/{filename}--{ts}.csv'
+    logfilename = f'{datadir}/logs/{filename}--{ts}.log'
     f = open(logfilename, 'w')
     f.write(str(csvheader) + '\n')
 
@@ -264,7 +263,3 @@ def run(_start_date, _finish_date, _iterations, _width):
     f.close()
 
     createreport(reportfilename, csvheader, sortedresults)
-
-
-if __name__ == "__main__":
-    run()

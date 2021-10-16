@@ -7,6 +7,7 @@ from subprocess import Popen, PIPE
 from jesse.routes import router
 
 import jessetk.Vars as Vars
+from jessetk.Vars import datadir
 import jessetk.utils
 
 
@@ -16,7 +17,7 @@ class refine:
 
         signal.signal(signal.SIGINT, self.signal_handler)
 
-        self.jessetkdir = 'jessetkdata'
+        self.jessetkdir = datadir
         self.dna_py_file = dna_py_file
         self.start_date = start_date
         self.finish_date = finish_date

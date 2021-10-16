@@ -2,7 +2,7 @@ import importlib
 import os
 
 import jesse.helpers as jh
-
+from jessetk.Vars import datadir
 
 def sort_array_by_key(rows, sort_key):
     return sorted(rows, key=lambda x: int(x[sort_key]), reverse=True)
@@ -10,7 +10,7 @@ def sort_array_by_key(rows, sort_key):
 
 class picker:
     def __init__(self, dna_log_file, strategy, strategy_class, len1, len2, criteria):
-        self.jessetkdir = 'jessetkdata'
+        self.jessetkdir = datadir
         self.dna_log_file = dna_log_file
         self.strategy = strategy
         self.strategy_class = strategy_class

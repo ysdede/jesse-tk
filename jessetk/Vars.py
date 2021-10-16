@@ -1,3 +1,5 @@
+datadir = 'jessetkdir'
+
 Metrics = {
     'start_date': None,
     'finish_date': None,
