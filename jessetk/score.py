@@ -1,11 +1,10 @@
-def run():
-    print('yeah')
+def run():  # TODO Convert to Class and make it clear.
     import glob
     import csv
     from collections import Counter
     from jessetk import utils
 
-    csv_folder = 'jessepickerdata\\results'
+    csv_folder = 'jessepickerdata\\results'  # TODO: Move to new data dir or make it optional.
     glob_filter = csv_folder + '/*.csv'
 
     print('Looking for files in:', csv_folder)
@@ -51,24 +50,6 @@ def run():
                         if row[2] == k and float(row[11]) > 2.5:
                             print(row)
 
-            # for row in data[1:]:
-            #     print(row[2], row[10], row[11])
 
-            # outputfilename = os.path.basename(csv_f.replace('.swf', '.png'))
-            # print('finalfile name: ', outputfilename)
-
-            # killall()
-            # processhandler = runplayer(csv_f)
-            # sleep(2)
-            # modifywindow()
-            # renderpng(output_folder + outputfilename)
-            # processhandler.terminate()
     else:
         print('done...')
-
-    # import csv
-    #
-    # with open('testfile.csv', newline='') as csvfile:
-    #     data = list(csv.reader(csvfile))
-    #
-    # print(data)
