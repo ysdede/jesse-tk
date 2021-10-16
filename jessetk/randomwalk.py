@@ -216,10 +216,10 @@ def run(_start_date, _finish_date, _iterations, _width):
 
     ts = datetime.now().strftime("%Y%m%d %H%M%S")
 
-    filename = f'{exchange}-{timeframe}--{ts}'
+    filename = f'Random-{exchange}-{symbol}-{timeframe}-{_start_date}-{_finish_date}-{ts}'
 
-    reportfilename = f'{datadir}/results/{filename}--{ts}.csv'
-    logfilename = f'{datadir}/logs/{filename}--{ts}.log'
+    reportfilename = f'{datadir}/results/{filename}.csv'
+    logfilename = f'{datadir}/logs/{filename}.log'
     f = open(logfilename, 'w')
     f.write(str(csvheader) + '\n')
 

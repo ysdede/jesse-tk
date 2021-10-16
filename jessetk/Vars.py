@@ -1,4 +1,4 @@
-datadir = 'jessetkdir'
+datadir = 'jessetkdata'
 
 Metrics = {
     'start_date': None,
