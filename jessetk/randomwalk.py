@@ -1,5 +1,6 @@
 import os
 import random
+import sys
 from datetime import datetime
 from datetime import timedelta
 from subprocess import Popen, PIPE
@@ -13,100 +14,58 @@ from jesse.routes import router
 from jessetk.Vars import datadir
 
 
-def split(_str):
-    _ll = _str.split(' ')
-    _r = _ll[len(_ll) - 1].replace('%', '')
-    _r = _r.replace(')', '')
-    _r = _r.replace('(', '')
-    _r = _r.replace(',', '')
-    return _r
+def signal_handler(sig, frame):
+    print('You pressed Ctrl+C!')
+    sys.exit(0)
 
 
-def getmetrics(_pair, _tf, metrics, _startdate, _enddate):
-    metr = [_pair, _tf, _startdate, _enddate]
-    lines = metrics.splitlines()
-    for index, line in enumerate(lines):
+class RandomWalk:
+    def __init__(self, start_date, finish_date, n_of_iters, width):
+        import signal
 
-        if 'CandleNotFoundInDatabase' in line:
-            return [_pair, _tf, _startdate, _enddate, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        signal.signal(signal.SIGINT, signal_handler)
 
-        if 'Uncaught Exception' in line:
-            print(metrics)
-            exit(1)
+        self.jessetkdir = datadir
+        self.start_date = start_date
+        self.finish_date = finish_date
 
-        if 'No trades were made' in line:
-            return [_pair, _tf, _startdate, _enddate, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.start_date_object = datetime.strptime(start_date, '%Y-%m-%d')  # start_date as datetime object, to make calculations easier.
+        self.finish_date_object = datetime.strptime(finish_date, '%Y-%m-%d')
+        self.test_period_length = self.finish_date_object - self.start_date_object  # Test period length as days
+        self.rand_end = self.test_period_length - timedelta(days=width)  # period - windows width
 
-        if 'Total Closed Trades' in line:
-            a = split(line)
-            metr.append(a)
-            # print('Total closed:', a)
+        self.results = []
+        self.sorted_results = []
+        self.random_numbers = []
 
-        if 'Total Net Profit' in line:
-            a = split(line)
-            metr.append(a)
-            # print('Net Profit:', a)
+        r = router.routes[0]                # Read first route from routes.py
+        self.strategy = r.strategy_name     # get strategy name to create filenames
 
-        if 'Max Drawdown' in line:
-            a = split(line)
-            metr.append(a)
-            # print('Max Drawdown:', a)
+        self.ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+        self.filename = f'Random-{self.strategy}-{start_date}--{finish_date}-{self.ts}'
+        self.report_file_name = f'{self.jessetkdir}/results/{self.filename}--{self.ts}.csv'
+        self.log_file_name = f'{self.jessetkdir}/logs/{self.filename}--{self.ts}.log'
 
-        if 'Annual Return' in line:
-            a = float(split(line))
-            metr.append(round(a))
-            # print('Annual Return:', a)
+    def make_random_period(self, width, random_numbers, random_end, start_date, timeframe):
+        # rn = int(quantumrandom.randint(0, rand_end.days))  # random.randint(0, rand_end.days)
+        # rn = random.randint(0, rand_end.days)
 
-        if 'Percent Profitable' in line:
-            a = split(line)
-            metr.append(a)
-            # print('Percent Profitable:', a)
+        max_retries = 6
+        random_number = None
 
-        if 'Sharpe Ratio' in line:
-            a = split(line)
-            metr.append(a)
-            # print('Sharpe Ratio:', a)
+        for _ in range(max_retries):
+            random_number = random.randint(0, random_end.days)
+            if random_number not in random_numbers:
+                break
 
-        if 'Calmar Ratio' in line:
-            a = split(line)
-            metr.append(a)
-            # print('Calmar Ratio:', a)
+        random_numbers.append(random_number)
 
-        if 'Winning Streak' in line:
-            a = split(line)
-            metr.append(a)
-            # print('Winning Streak:', a)
-
-        if 'Losing Streak' in line:
-            a = split(line)
-            metr.append(a)
-            # print('Losing Streak:', a)
-
-        if 'Largest Winning Trade' in line:
-            a = float(split(line))
-            metr.append(round(a))
-            # print('Largest Winning Trade:', a)
-
-        if 'Largest Losing Trade' in line:
-            a = float(split(line))
-            metr.append(round(a))
-            # print('Largest Losing Trade:', a)
-
-        if 'Total Winning Trades' in line:
-            a = split(line)
-            metr.append(a)
-            # print('Total Winning Trades:', a)
-
-        if 'Total Losing Trades' in line:
-            a = split(line)
-            metr.append(a)
-            # print('Total Losing Trades:', a)
-
-        if 'Market Change' in line:
-            a = split(line)
-            metr.append(a)
-            # print('Market Change:', a)
-    return metr
+        random_start_date = start_date + timedelta(days=random_number)  # Add random number of days to start date
+        random_finish_date = random_start_date + timedelta(days=width)
+        # _sd = random_start_date.strftime('%Y-%m-%d')
+        # _ed = random_finish_date.strftime('%Y-%m-%d')
+        # print(str(random_start_date), str(random_finish_date), _sd, _ed)
+        return random_start_date.strftime('%Y-%m-%d'), random_finish_date.strftime('%Y-%m-%d'), random_numbers
 
 
 def runtest(_startdate, _enddate, _pair, _tf):
@@ -117,24 +76,6 @@ def runtest(_startdate, _enddate, _pair, _tf):
     print(res)
     return getmetrics(_pair, _tf, res, _startdate, _enddate)
 
-
-def makerandomperiod(_width, _randomnumbers, _rand_end, _fd, _timeframe):
-    # rn = int(quantumrandom.randint(0, rand_end.days))  # random.randint(0, rand_end.days)
-    # rn = random.randint(0, rand_end.days)
-    rn = random.randint(0, _rand_end.days)
-
-    if rn in _randomnumbers:
-        rn = random.randint(0, _rand_end.days)
-    _randomnumbers.append(rn)
-
-    _start_date = _fd + timedelta(days=rn)
-    _finish_date = _start_date + timedelta(minutes=jh.timeframe_to_one_minutes(_timeframe) * _width)
-    _sd = _start_date.strftime('%Y-%m-%d')
-    _ed = _finish_date.strftime('%Y-%m-%d')
-    # print(str(start_date), str(end_date), _sd, _ed)
-    startdate = _sd
-    enddate = _ed
-    return _sd, _ed, _randomnumbers
 
 
 def createreport(_reportfilename, _csvheader, _sortedresults):
@@ -172,56 +113,26 @@ def run(_start_date, _finish_date, _iterations, _width):
     fixedenddate = _finish_date  # '10/08/2021 00:00:00'        # Hardcoded
 
     # date_1 = datetime.strptime(oldestdate, '%Y-%m-%d')
-    fd = datetime.strptime(oldestdate, '%Y-%m-%d') + timedelta(minutes=pre_candles_count + 1440)
+    fd = datetime.strptime(_start_date, '%Y-%m-%d')  # start_date as datetime object, to make calculations easier.
     firstcandledate = fd.strftime('%Y-%m-%d')
     fixedenddateobject = datetime.strptime(_finish_date, '%Y-%m-%d')
-    since = fixedenddateobject - fd  # datetime.now() - fd
 
-    print('oldestdate', oldestdate)
-    print('warmup_candles_count', warmup_candles_count)
-    print('pre_candles_count', pre_candles_count)
-    print('pre_candles_count', pre_candles_count)
-    print('First avail. date', fd)
-    print('firstcandledate', firstcandledate)
+    since = datetime.strptime(_finish_date, '%Y-%m-%d') - datetime.strptime(_start_date, '%Y-%m-%d')  # Test period length as days
 
-    print('Since:', since)
+    print(f'Start Date: {_start_date}, Finish Date: {_finish_date}, Period: {since}')
     rand_start = 0
 
     width = _width  # 4380 2h 1 year ##   2160 4320 = 3 mo for 30m, 8640 = 6 months for 30m
     numofiterations = _iterations  # 100
 
-    rand_end = since - timedelta(minutes=jh.timeframe_to_one_minutes(timeframe) * width)
-    print('rand end as int:', rand_end.days)
-    print('rand_end', rand_end)
+    rand_end = since - timedelta(days=width)  # period - windows width
     diff = (since - rand_end).days
-    print('Period:', diff, 'days')
-
-    csvheader = ['Pair', 'TF', 'Start Date', 'End Date', 'Total Trades', 'Total Net Profit', 'Max.DD',
-                 'Annual Profit', 'Winrate',
-                 'Sharpe', 'Calmar', 'Winning Strike', 'Losing Strike', 'Largest Winning', 'Largest Losing',
-                 'Num. of Wins', 'Num. of Losses',
-                 'Market Change']
-
-    header1 = ['Pair', 'TF', 'Start Date', 'End Date', 'Total', 'Total Net', 'Max.', 'Annual', 'Win',
-               'Sharpe', 'Calmar', 'Winning', 'Losing', 'Largest', 'Largest', 'Winning', 'Losing',
-               'Market']
-    header2 = [' ', ' ', '   ', '   ', 'Trades', 'Profit %', 'DD %', 'Return %', 'Rate %',
-               'Ratio', 'Ratio', 'Streak', 'Streak', 'Win. Trade', 'Los. Trade', 'Trades', 'Trades',
-               'Change %']
-
-    formatter = '{: <10} {: <5} {: <12} {: <12} {: <6} {: <12} {: <8} {: <10} {: <8} {: <8} {: <12} {: <8} {: <8} ' \
-                '{: <12} {: <12} {: <10} {: <10} {: <12}'
+    print('rand end as int:', rand_end.days, 'rand_end', rand_end, 'width:', diff, 'days')
 
     clearConsole = lambda: os.system('cls' if os.name in ('nt', 'dos') else 'clear')
-
-    ts = datetime.now().strftime("%Y%m%d %H%M%S")
-
-    filename = f'Random-{exchange}-{symbol}-{timeframe}-{_start_date}-{_finish_date}-{ts}'
-
-    reportfilename = f'{datadir}/results/{filename}.csv'
-    logfilename = f'{datadir}/logs/{filename}.log'
-    f = open(logfilename, 'w')
-    f.write(str(csvheader) + '\n')
+    #
+    # f = open(logfilename, 'w')
+    # f.write(str(csvheader) + '\n')
 
     print('Please wait while loading candles...')
 

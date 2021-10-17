@@ -1,4 +1,12 @@
 import os
+from subprocess import Popen, PIPE
+
+
+def run_test(start_date, finish_date):
+    process = Popen(['jesse', 'backtest', start_date, finish_date], stdout=PIPE)
+    (output, err) = process.communicate()
+    exit_code = process.wait()
+    return output.decode('utf-8')
 
 
 def make_routes(template, anchor, dna_code):
@@ -45,6 +53,36 @@ def print_tops_formatted(frmt, header1, header2, tr):
                 r['largest_win'], r['largest_lose'],
                 r['n_of_wins'], r['n_of_loses'],
                 r['paid_fees'], r['market_change']))
+
+
+def create_csv_report(sorted_results, filename, header):
+    from jessetk.Vars import csvd
+    with open(filename, 'w', encoding='utf-8') as f:
+        f.write(str(header).replace('[', '').replace(']', '').replace("'", "").replace(',',
+                                                                                       csvd) + '\n')
+
+        for srl in sorted_results:
+            f.write(f"{srl['symbol']}{csvd}{srl['tf']}{csvd}" + repr(srl['dna']) +
+                    f"{csvd}{srl['start_date']}{csvd}"
+                    f"{srl['finish_date']}{csvd}"
+                    f"{srl['total_trades']}{csvd}"
+                    f"{srl['n_of_longs']}{csvd}"
+                    f"{srl['n_of_shorts']}{csvd}"
+                    f"{srl['total_profit']}{csvd}"
+                    f"{srl['max_dd']}{csvd}"
+                    f"{srl['annual_return']}{csvd}"
+                    f"{srl['win_rate']}{csvd}"
+                    f"{srl['serenity']}{csvd}"
+                    f"{srl['sharpe']}{csvd}"
+                    f"{srl['calmar']}{csvd}"
+                    f"{srl['win_strk']}{csvd}"
+                    f"{srl['lose_strk']}{csvd}"
+                    f"{srl['largest_win']}{csvd}"
+                    f"{srl['largest_lose']}{csvd}"
+                    f"{srl['n_of_wins']}{csvd}"
+                    f"{srl['n_of_loses']}{csvd}"
+                    f"{srl['paid_fees']}{csvd}"
+                    f"{srl['market_change']}\n")
 
 
 def get_metrics3(console_output) -> dict:
