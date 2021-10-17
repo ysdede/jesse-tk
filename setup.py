@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="jesse-tk",
-    version='0.11',
+    version='0.12',
     install_requires=[
         'Click',
     ],

@@ -5,17 +5,13 @@ from time import strftime, gmtime
 from timeit import default_timer as timer
 
 import click
-# Hide the "FutureWarning: pandas.util.testing is deprecated." caused by empyrical
 import jesse.helpers as jh
 from jesse.helpers import get_config
 
 from jessetk import randomwalk, utils, Vars
+from jessetk.Vars import initial_test_message, random_file_header, refine_file_header
 
 # Python version validation.
-# from jessepicker import random
-# from jessepicker.dnasorter import sortdnas, valideoutputfile
-# from jessetk.pick import sortdnas, validate_output_file
-
 if jh.python_version() < 3.7:
     print(
         jh.color(
@@ -78,7 +74,6 @@ def pick(dna_log_file, sort_criteria, len1, len2) -> None:
 
     from jesse.routes import router
     import jesse.helpers as jh
-    # from jessepicker.dnasorter import sortdnas, valideoutputfile
 
     makedirs()
     r = router.routes[0]  # Read first route from routes.py
@@ -107,11 +102,10 @@ def refine(dna_file, start_date: str, finish_date: str) -> None:
     validate_cwd()
     validateconfig()
     makedirs()
-    print('Please wait while performing initial test...')
+    print_initial_msg()
+
     from jessetk.refine import refine
-
     refiner = refine(dna_file, start_date, finish_date)
-
     refiner.import_dnas()
     refiner.routes_template = utils.read_file('routes.py')
 
@@ -119,18 +113,18 @@ def refine(dna_file, start_date: str, finish_date: str) -> None:
     start = timer()
 
     for index, dnac in enumerate(refiner.dnas, start=1):
-
         # Inject dna to routes.py
         utils.make_routes(refiner.routes_template, refiner.anchor, dna_code=dnac[0])
 
         # Run jesse backtest and grab console output
-        console_output = refiner.run_test()
+        console_output = utils.run_test(start_date, finish_date)
 
         # Scrape console output and return metrics as a dict
         metric = utils.get_metrics3(console_output)
 
         # Add test specific static values
         metric['dna'] = dnac[0]
+        metric['exchange'] = refiner.exchange
         metric['symbol'] = refiner.pair
         metric['tf'] = refiner.timeframe
         metric['start_date'] = refiner.start_date
@@ -138,27 +132,23 @@ def refine(dna_file, start_date: str, finish_date: str) -> None:
 
         if metric not in results:
             results.append(copy.deepcopy(metric))
-
-        # f.write(str(metric) + '\n')  # Logging
+        # f.write(str(metric) + '\n')  # Logging disabled
         # f.flush()
-
         refiner.sorted_results = sorted(results, key=lambda x: float(x['serenity']), reverse=True)
 
         clear_console()
 
-        rt = ((timer() - start) / index) * (refiner.n_of_dnas - index)
-        eta_formatted = strftime("%H:%M:%S", gmtime(rt))
+        eta = ((timer() - start) / index) * (refiner.n_of_dnas - index)
+        eta_formatted = strftime("%H:%M:%S", gmtime(eta))
         print(
             f'{index}/{refiner.n_of_dnas}\teta: {eta_formatted} | {refiner.pair} '
             f'| {refiner.timeframe} | {refiner.start_date} -> {refiner.finish_date}')
 
-        refiner.print_tops_formatted(refiner.sorted_results[0:30])
+        refiner.print_tops_formatted()
 
-    # Restore routes.py
-    utils.write_file('routes.py', refiner.routes_template)
+    utils.write_file('routes.py', refiner.routes_template)  # Restore routes.py
     refiner.save_dnas(refiner.sorted_results)
-    refiner.create_csv_report(refiner.sorted_results)
-
+    utils.create_csv_report(refiner.sorted_results, refiner.report_file_name, refine_file_header)
     # # Sync and close log file
     # os.fsync(f.fileno())
     # f.close()
@@ -168,38 +158,73 @@ def refine(dna_file, start_date: str, finish_date: str) -> None:
 @click.argument('start_date', required=True, type=str)
 @click.argument('finish_date', required=True, type=str)
 @click.argument('iterations', required=False, type=int)
-@click.argument('days', required=False, type=int)
-def random(start_date: str, finish_date: str, iterations: int, days: int) -> None:
+@click.argument('width', required=False, type=int)
+def random(start_date: str, finish_date: str, iterations: int, width: int) -> None:
     """
     random walk backtest. Enter period "YYYY-MM-DD" "YYYY-MM-DD
-                                iterations eg. 100
-                                window width in days eg 180"
+                                number of tests to perform  eg. 40
+                                sample width in days        eg. 30"
     """
+
     os.chdir(os.getcwd())
     validate_cwd()
     validateconfig()
     makedirs()
 
-    from jesse.routes import router
-    import jesse.helpers as jh
-
-    r = router.routes[0]  # Read first route from routes.py
-    timeframe = r.timeframe
-
     if start_date is None or finish_date is None:
         print('Enter dates!')
         exit()
 
-    if not iterations:
+    if not iterations or iterations < 0:
         iterations = 30
         print('Iterations not provided, falling back to 30 iters!')
-    if not days:
-        days = 60
-        print('Window width not provided, falling back to 60 days window!')
+    if not width:
+        width = 30
+        print(f'Window width not provided, falling back to {width} days window!')
 
-    width = (24 / (jh.timeframe_to_one_minutes(timeframe) / 60)) * days
+    from jessetk.randomwalk import RandomWalk
+    random_walk = RandomWalk(start_date, finish_date, iterations, width)
 
-    randomwalk.run(_start_date=start_date, _finish_date=finish_date, _iterations=iterations, _width=width)
+    print_initial_msg()
+    start = timer()
+    results = []
+    for index in range(1, iterations + 1):
+        rand_period_start, rand_period_finish = random_walk.make_random_period()  # Create a random period between given period
+
+        # Run jesse backtest and grab console output
+        console_output = utils.run_test(rand_period_start, rand_period_finish)
+
+        # Scrape console output and return metrics as a dict
+        metric = utils.get_metrics3(console_output)
+
+        # Shared values TODO Make it common for all tools
+        metric['dna'] = random_walk.dna
+        metric['exchange'] = random_walk.exchange
+        metric['symbol'] = random_walk.symbol
+        metric['tf'] = random_walk.timeframe
+
+        # Add test specific values
+        metric['start_date'] = rand_period_start
+        metric['finish_date'] = rand_period_finish
+
+        if metric not in results:
+            results.append(copy.deepcopy(metric))
+        # f.write(str(metric) + '\n')  # Logging disabled
+        # f.flush()
+        random_walk.sorted_results = sorted(results, key=lambda x: float(x['serenity']), reverse=True)
+
+        eta = ((timer() - start) / index) * (iterations - index)
+        eta_formatted = strftime("%H:%M:%S", gmtime(eta))
+
+        clear_console()
+        print(
+            f'{index}/{iterations}\teta: {eta_formatted} | {random_walk.exchange} '
+            f'| {random_walk.symbol} | {random_walk.timeframe} | {repr(random_walk.dna)} '
+            f'| Period: {start_date} -> {finish_date} | Sample width: {width}')
+
+        random_walk.print_tops_formatted()
+
+    utils.create_csv_report(random_walk.sorted_results, random_walk.report_file_name, random_file_header)
 
 
 # // *
@@ -214,11 +239,12 @@ def refinepairs(dna_file, start_date: str, finish_date: str) -> None:
     os.chdir(os.getcwd())
     validate_cwd()
 
-    # from jessepicker.refinepairs import run
     from jessetk.refinepairs import run
     validateconfig()
     makedirs()
     run(dna_file, _start_date=start_date, _finish_date=finish_date)
+
+
 # // *
 
 @cli.command()
@@ -234,6 +260,7 @@ def score() -> None:
     makedirs()
     run()
 
+
 @cli.command()
 def fixcsv() -> None:
     """
@@ -246,6 +273,7 @@ def fixcsv() -> None:
     # validateconfig()
     # makedirs()
     run()
+
 
 # ///
 @cli.command()
@@ -265,7 +293,8 @@ def testpairs(start_date: str, finish_date: str) -> None:
     run(_start_date=start_date, _finish_date=finish_date)
 
 
-# ///
+def print_initial_msg():
+    print(initial_test_message)
 
 
 def makedirs():
