@@ -24,28 +24,25 @@ def make_routes(template, symbol):
     if os.path.exists('routes.py'):
         os.remove('routes.py')
 
-    f = open('routes.py', 'w', encoding='utf-8')
-    f.write(template)
-    f.flush()
-    os.fsync(f.fileno())
-    f.close()
+    with open('routes.py', 'w', encoding='utf-8') as f:
+        f.write(template)
+        f.flush()
+        os.fsync(f.fileno())
 
 
 def write_file(_fn, _body):
     if os.path.exists(_fn):
         os.remove(_fn)
 
-    f = open(_fn, 'w', encoding='utf-8')
-    f.write(_body)
-    f.flush()
-    os.fsync(f.fileno())
-    f.close()
+    with open(_fn, 'w', encoding='utf-8') as f:
+        f.write(_body)
+        f.flush()
+        os.fsync(f.fileno())
 
 
 def read_file(_file):
-    ff = open(_file, 'r', encoding='utf-8')
-    _body = ff.read()
-    ff.close()
+    with open(_file, 'r', encoding='utf-8') as ff:
+        _body = ff.read()
     return _body
 
 

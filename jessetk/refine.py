@@ -2,13 +2,12 @@ import importlib
 import os
 import sys
 from datetime import datetime
-from subprocess import Popen, PIPE
 
 from jesse.routes import router
 
 import jessetk.Vars as Vars
-from jessetk.Vars import datadir
 import jessetk.utils
+from jessetk.Vars import datadir
 
 
 class refine:
@@ -49,16 +48,13 @@ class refine:
 
         self.ts = datetime.now().strftime("%Y%m%d %H%M%S")
         # TODO Create results, logs, dnafiles folders if needed.
-        self.filename = f'{self.exchange}-{self.pair}-{self.timeframe}--{start_date}--{finish_date}'
+        self.filename = f'Refine-{self.exchange}-{self.pair}-{self.timeframe}--{start_date}--{finish_date}'
 
         self.report_file_name = f'{self.jessetkdir}/results/{self.filename}--{self.ts}.csv'
         self.log_file_name = f'{self.jessetkdir}/logs/{self.filename}--{self.ts}.log'
 
-        # make routes unutma
-
     def signal_handler(self, sig, frame):
         print('You pressed Ctrl+C!')
-
         # Restore routes.py
         jessetk.utils.write_file('routes.py', self.routes_template)
         sys.exit(0)
@@ -72,19 +68,13 @@ class refine:
 
         self.n_of_dnas = len(self.dnas)
 
-    def run_test(self):
-        process = Popen(['jesse', 'backtest', self.start_date, self.finish_date], stdout=PIPE)
-        (output, err) = process.communicate()
-        exit_code = process.wait()
-        return output.decode('utf-8')
-
-    def print_tops_formatted(self, tr):
+    def print_tops_formatted(self):
         print(
             Vars.refine_console_formatter.format(*Vars.refine_console_header1))
         print(
             Vars.refine_console_formatter.format(*Vars.refine_console_header2))
 
-        for r in tr:
+        for r in self.sorted_results[0:40]:
             print(
                 Vars.refine_console_formatter.format(
                     r['dna'],
@@ -106,37 +96,6 @@ class refine:
                     r['n_of_loses'],
                     r['paid_fees'],
                     r['market_change']))
-
-    def create_csv_report(self, sorted_results):
-        from jessetk.Vars import csvd
-        with open(self.report_file_name, 'w', encoding='utf-8') as f:
-            f.write(str(Vars.refine_file_header).replace('[', '').replace(']', '').replace("'", "").replace(',',
-                                                                                                            csvd) + '\n')
-
-            for srl in sorted_results:
-                f.write(f"{srl['symbol']}{csvd}{srl['tf']}{csvd}" + repr(srl['dna']) +
-                        f"{csvd}{srl['start_date']}{csvd}"
-                        f"{srl['finish_date']}{csvd}"
-                        f"{srl['total_trades']}{csvd}"
-                        f"{srl['n_of_longs']}{csvd}"
-                        f"{srl['n_of_shorts']}{csvd}"
-                        f"{srl['total_profit']}{csvd}"
-                        f"{srl['max_dd']}{csvd}"
-                        f"{srl['annual_return']}{csvd}"
-                        f"{srl['win_rate']}{csvd}"
-                        f"{srl['serenity']}{csvd}"
-                        f"{srl['sharpe']}{csvd}"
-                        f"{srl['calmar']}{csvd}"
-                        f"{srl['win_strk']}{csvd}"
-                        f"{srl['lose_strk']}{csvd}"
-                        f"{srl['largest_win']}{csvd}"
-                        f"{srl['largest_lose']}{csvd}"
-                        f"{srl['n_of_wins']}{csvd}"
-                        f"{srl['n_of_loses']}{csvd}"
-                        f"{srl['paid_fees']}{csvd}"
-                        f"{srl['market_change']}\n")
-
-            os.fsync(f.fileno())
 
     def save_dnas(self, sorted_results):
         dna_fn = f'{self.jessetkdir}/dnafiles/{self.pair} {self.start_date} {self.finish_date}.py'

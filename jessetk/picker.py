@@ -4,6 +4,7 @@ import os
 import jesse.helpers as jh
 from jessetk.Vars import datadir
 
+
 def sort_array_by_key(rows, sort_key):
     return sorted(rows, key=lambda x: int(x[sort_key]), reverse=True)
 
