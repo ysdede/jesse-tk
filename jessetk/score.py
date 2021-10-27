@@ -47,7 +47,7 @@ def run():  # TODO Convert to Class and make it clear.
                     # data = list(csv.reader(cf, delimiter=","))
                     for row in data[1:]:
                         # print(row[2], row[10], row[11])
-                        if row[2] == k and float(row[11]) > 2.5:
+                        if row[2] == k and float(row[11]) >2:
                             print(row)
 
 
