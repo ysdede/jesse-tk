@@ -1,13 +1,14 @@
 import copy
 import os
 import sys
+from pydoc import locate
 from time import strftime, gmtime
 from timeit import default_timer as timer
 
 import click
 import jesse.helpers as jh
 from jesse.helpers import get_config
-
+from jesse.routes import router
 from jessetk import randomwalk, utils, Vars
 from jessetk.Vars import initial_test_message, random_file_header, refine_file_header
 
@@ -27,6 +28,29 @@ ls = os.listdir('.')
 is_jesse_project = 'strategies' in ls and 'config.py' in ls and 'storage' in ls and 'routes.py' in ls
 
 clear_console = lambda: os.system('cls' if os.name in ('nt', 'dos') else 'clear')
+
+
+def inject_local_config() -> None:
+    """
+    injects config from local config file
+    """
+    local_config = locate('config.config')
+    from jesse.config import set_config
+    set_config(local_config)
+
+
+def inject_local_routes() -> None:
+    """
+    injects routes from local routes folder
+    """
+    local_router = locate('routes')
+    from jesse.routes import router
+    print('tk ########################')
+    my_routes = [('Binance Futures', "AAVE-USDT", '5m', 'OttBands5minFixed2', 'XGaf\\')]
+    print(my_routes)
+    print('tk ########################')
+    router.set_routes(my_routes)
+    router.set_extra_candles(local_router.extra_candles)
 
 
 def validate_cwd() -> None:
@@ -94,7 +118,8 @@ def pick(dna_log_file, sort_criteria, len1, len2) -> None:
 @click.argument('dna_file', required=True, type=str)
 @click.argument('start_date', required=True, type=str)
 @click.argument('finish_date', required=True, type=str)
-def refine(dna_file, start_date: str, finish_date: str) -> None:
+@click.argument('eliminate', required=False, type=bool)
+def refine(dna_file, start_date: str, finish_date: str, eliminate:bool) -> None:
     """
     backtest all candidate dnas. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
@@ -102,56 +127,13 @@ def refine(dna_file, start_date: str, finish_date: str) -> None:
     validate_cwd()
     validateconfig()
     makedirs()
-    print_initial_msg()
+
+    if not eliminate:
+        eliminate = False
 
     from jessetk.refine import refine
-    refiner = refine(dna_file, start_date, finish_date)
-    refiner.import_dnas()
-    refiner.routes_template = utils.read_file('routes.py')
-
-    results = []
-    start = timer()
-
-    for index, dnac in enumerate(refiner.dnas, start=1):
-        # Inject dna to routes.py
-        utils.make_routes(refiner.routes_template, refiner.anchor, dna_code=dnac[0])
-
-        # Run jesse backtest and grab console output
-        console_output = utils.run_test(start_date, finish_date)
-
-        # Scrape console output and return metrics as a dict
-        metric = utils.get_metrics3(console_output)
-
-        # Add test specific static values
-        metric['dna'] = dnac[0]
-        metric['exchange'] = refiner.exchange
-        metric['symbol'] = refiner.pair
-        metric['tf'] = refiner.timeframe
-        metric['start_date'] = refiner.start_date
-        metric['finish_date'] = refiner.finish_date
-
-        if metric not in results:
-            results.append(copy.deepcopy(metric))
-        # f.write(str(metric) + '\n')  # Logging disabled
-        # f.flush()
-        refiner.sorted_results = sorted(results, key=lambda x: float(x['serenity']), reverse=True)
-
-        clear_console()
-
-        eta = ((timer() - start) / index) * (refiner.n_of_dnas - index)
-        eta_formatted = strftime("%H:%M:%S", gmtime(eta))
-        print(
-            f'{index}/{refiner.n_of_dnas}\teta: {eta_formatted} | {refiner.pair} '
-            f'| {refiner.timeframe} | {refiner.start_date} -> {refiner.finish_date}')
-
-        refiner.print_tops_formatted()
-
-    utils.write_file('routes.py', refiner.routes_template)  # Restore routes.py
-    refiner.save_dnas(refiner.sorted_results)
-    utils.create_csv_report(refiner.sorted_results, refiner.report_file_name, refine_file_header)
-    # # Sync and close log file
-    # os.fsync(f.fileno())
-    # f.close()
+    r = refine(dna_file, start_date, finish_date, eliminate)
+    r.run(dna_file, start_date, finish_date)
 
 
 @cli.command()
@@ -226,6 +208,56 @@ def random(start_date: str, finish_date: str, iterations: int, width: int) -> No
 
     utils.create_csv_report(random_walk.sorted_results, random_walk.report_file_name, random_file_header)
 
+@cli.command()
+@click.argument('dna_file', required=True, type=str)
+@click.argument('start_date', required=True, type=str)
+@click.argument('finish_date', required=True, type=str)
+@click.argument('iterations', required=False, type=int)
+@click.argument('width', required=False, type=int)
+def randomsg(dna_file, start_date: str, finish_date: str, iterations: int, width: int) -> None:
+    """
+    random walk backtest. Enter period "YYYY-MM-DD" "YYYY-MM-DD
+                                number of tests to perform  eg. 40
+                                sample width in days        eg. 30"
+    """
+
+    os.chdir(os.getcwd())
+    validate_cwd()
+    validateconfig()
+    makedirs()
+
+    if start_date is None or finish_date is None:
+        print('Enter dates!')
+        exit()
+
+    if not iterations or iterations < 0:
+        iterations = 25
+        print('Iterations not provided, falling back to 30 iters!')
+    if not width:
+        width = 50
+        print(f'Window width not provided, falling back to {width} days window!')
+
+    from jessetk.randomwalk import RandomWalk
+    random_walk = RandomWalk(start_date, finish_date, iterations, width)
+    from jessetk.refine import refine
+
+    print_initial_msg()
+    # start = timer()
+    results = []
+    for _ in range(1, iterations + 1):
+        rand_period_start, rand_period_finish = random_walk.make_random_period()  # Create a random period between given period
+
+        r = refine(dna_file, rand_period_start, rand_period_finish, eliminate=True)
+        r.run(dna_file, rand_period_start, rand_period_finish)
+
+        if len(r.sorted_results) <= 5:
+            print('Target reached, exiting...')
+            break
+
+        # eta = ((timer() - start) / index) * (iterations - index)
+        # eta_formatted = strftime("%H:%M:%S", gmtime(eta))
+
+
 
 # // *
 @cli.command()
@@ -291,6 +323,85 @@ def testpairs(start_date: str, finish_date: str) -> None:
     validateconfig()
     makedirs()
     run(_start_date=start_date, _finish_date=finish_date)
+
+
+@cli.command()
+@click.argument('start_date', required=True, type=str)
+@click.argument('finish_date', required=True, type=str)
+@click.option('--debug/--no-debug', default=False,
+              help='Displays logging messages instead of the progressbar. Used for debugging your strategy.')
+@click.option('--csv/--no-csv', default=False,
+              help='Outputs a CSV file of all executed trades on completion.')
+@click.option('--json/--no-json', default=False,
+              help='Outputs a JSON file of all executed trades on completion.')
+@click.option('--fee/--no-fee', default=True,
+              help='You can use "--no-fee" as a quick way to set trading fee to zero.')
+@click.option('--chart/--no-chart', default=False,
+              help='Generates charts of daily portfolio balance and assets price change. Useful for a visual comparision of your portfolio against the market.')
+@click.option('--tradingview/--no-tradingview', default=False,
+              help="Generates an output that can be copy-and-pasted into tradingview.com's pine-editor too see the trades in their charts.")
+@click.option('--full-reports/--no-full-reports', default=False,
+              help="Generates QuantStats' HTML output with metrics reports like Sharpe ratio, Win rate, Volatility, etc., and batch plotting for visualizing performance, drawdowns, rolling statistics, monthly returns, etc.")
+def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bool, fee: bool, chart: bool,
+             tradingview: bool, full_reports: bool) -> None:
+    """
+    backtest mode. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
+    """
+    validate_cwd()
+    from jesse.services import report
+
+    # router.routes[0].strategy_name
+    # router.routes[0].exchange
+    # router.set_routes(local_router.routes)
+    # router.set_extra_candles(local_router.extra_candles)
+    # inject local files
+
+    # router.routes[0].symbol = 'MATIC-USDT'
+
+    # print(router.routes[0].__dict__)
+    # exit()
+    # router.routes[0].timeframe
+
+    from jesse.config import config
+    config['app']['trading_mode'] = 'backtest'
+    # register_custom_exception_handler()
+    from jesse.services import db
+    from jesse.modes import backtest_mode
+    from jesse.services.selectors import get_exchange
+
+    # debug flag
+    config['app']['debug_mode'] = debug
+
+    # fee flag
+    if not fee:
+        for e in config['app']['trading_exchanges']:
+            config['env']['exchanges'][e]['fee'] = 0
+            get_exchange(e).fee = 0
+
+    # if is_jesse_project:
+    #     inject_local_config()
+    #     inject_local_routes()
+
+    print(router.routes[0].__dict__)
+
+    print('************ BEFORE ****************')
+    print(config['app']['considering_candles'], '/////////////////////////////////////')
+    print(config['app']['trading_symbols'], '/////////////////////////////////////')
+    print('************ AFTER ****************')
+    # config['app']['considering_candles'] = (('Binance Futures', 'MATIC-USDT'),)
+    # config['app']['trading_symbols'] = ("MATIC-USDT",)
+
+    print(config['app']['considering_candles'], '/////////////////////////////////////')
+    print(config['app']['trading_symbols'], '/////////////////////////////////////')
+
+    # backtest_mode._initialized_strategies()
+
+    backtest_mode.run(start_date, finish_date, chart=chart, tradingview=tradingview, csv=csv,
+                      json=json, full_reports=full_reports)
+
+    data = report.portfolio_metrics()
+    print(data)
+    db.close_connection()
 
 
 def print_initial_msg():
