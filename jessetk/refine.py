@@ -1,17 +1,22 @@
+import copy
 import importlib
 import os
 import sys
 from datetime import datetime
+from time import strftime, gmtime
+from timeit import default_timer as timer
 
 from jesse.routes import router
 
 import jessetk.Vars as Vars
 import jessetk.utils
+from jessetk import utils, print_initial_msg, clear_console
 from jessetk.Vars import datadir
+from jessetk.Vars import refine_file_header
 
 
 class refine:
-    def __init__(self, dna_py_file, start_date, finish_date):
+    def __init__(self, dna_py_file, start_date, finish_date, eliminate: bool = False):
         import signal
 
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -20,7 +25,7 @@ class refine:
         self.dna_py_file = dna_py_file
         self.start_date = start_date
         self.finish_date = finish_date
-
+        self.eliminate = eliminate
         self.anchor = 'DNA!'
         self.sort_by = {'serenity': 12, 'sharpe': 13, 'calmar': 14}
 
@@ -53,6 +58,69 @@ class refine:
         self.report_file_name = f'{self.jessetkdir}/results/{self.filename}--{self.ts}.csv'
         self.log_file_name = f'{self.jessetkdir}/logs/{self.filename}--{self.ts}.log'
 
+    def run(self, dna_file: str, start_date: str, finish_date: str):
+        # from jessetk.refine import refine
+        # refiner = refine(dna_file, start_date, finish_date)
+        self.import_dnas()
+        self.routes_template = utils.read_file('routes.py')
+        
+        results = []
+        start = timer()
+        print_initial_msg()
+        for index, dnac in enumerate(self.dnas, start=1):
+            # Inject dna to routes.py
+            utils.make_routes(self.routes_template, self.anchor, dna_code=dnac[0])
+
+            # Run jesse backtest and grab console output
+            console_output = utils.run_test(start_date, finish_date)
+
+            # Scrape console output and return metrics as a dict
+            metric = utils.get_metrics3(console_output)
+
+            # Add test specific static values
+            metric['dna'] = dnac[0]
+            metric['exchange'] = self.exchange
+            metric['symbol'] = self.pair
+            metric['tf'] = self.timeframe
+            metric['start_date'] = self.start_date
+            metric['finish_date'] = self.finish_date
+
+            if metric not in results:
+                results.append(copy.deepcopy(metric))
+            # f.write(str(metric) + '\n')  # Logging disabled
+            # f.flush()
+            sorted_results_prelist = sorted(results, key=lambda x: float(x['sharpe']), reverse=True)
+            self.sorted_results = []
+
+            if self.eliminate:
+                for r in sorted_results_prelist:
+                    if float(r['sharpe']) > 0:
+                        self.sorted_results.append(r)
+            else:
+                self.sorted_results = sorted_results_prelist
+
+            clear_console()
+
+            eta = ((timer() - start) / index) * (self.n_of_dnas - index)
+            eta_formatted = strftime("%H:%M:%S", gmtime(eta))
+            print(
+                f'{index}/{self.n_of_dnas}\teta: {eta_formatted} | {self.pair} '
+                f'| {self.timeframe} | {self.start_date} -> {self.finish_date}')
+
+            self.print_tops_formatted()
+
+        utils.write_file('routes.py', self.routes_template)  # Restore routes.py
+
+        if self.eliminate:
+            self.save_dnas(self.sorted_results, dna_file)
+        else:
+            self.save_dnas(self.sorted_results)
+
+        utils.create_csv_report(self.sorted_results, self.report_file_name, refine_file_header)
+        # # Sync and close log file
+        # os.fsync(f.fileno())
+        # f.close()
+
     def signal_handler(self, sig, frame):
         print('You pressed Ctrl+C!')
         # Restore routes.py
@@ -63,7 +131,9 @@ class refine:
         module_name = self.dna_py_file.replace('\\', '.').replace('.py', '')
         module_name = module_name.replace('/', '.').replace('.py', '')
         print(module_name)
+
         self.dnas_module = importlib.import_module(module_name)
+        importlib.reload(self.dnas_module)
         self.dnas = self.dnas_module.dnas
 
         self.n_of_dnas = len(self.dnas)
@@ -97,8 +167,10 @@ class refine:
                     r['paid_fees'],
                     r['market_change']))
 
-    def save_dnas(self, sorted_results):
-        dna_fn = f'{self.jessetkdir}/dnafiles/{self.pair} {self.start_date} {self.finish_date}.py'
+    def save_dnas(self, sorted_results, dna_fn=None):
+
+        if not dna_fn:
+            dna_fn = f'{self.jessetkdir}/dnafiles/{self.pair} {self.start_date} {self.finish_date}.py'
 
         jessetk.utils.remove_file(dna_fn)
 
