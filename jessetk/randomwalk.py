@@ -54,13 +54,13 @@ class RandomWalk:
         random_finish_date = random_start_date + timedelta(days=self.width)
         return random_start_date.strftime('%Y-%m-%d'), random_finish_date.strftime('%Y-%m-%d')
 
-    def print_tops_formatted(self):
+    def print_tops_formatted(self, sorted_results):
         print(
             Vars.random_console_formatter.format(*Vars.random_console_header1))
         print(
             Vars.random_console_formatter.format(*Vars.random_console_header2))
 
-        for r in self.sorted_results[0:40]:
+        for r in sorted_results[0:40]:
             print(
                 Vars.random_console_formatter.format(
                     r['start_date'],
