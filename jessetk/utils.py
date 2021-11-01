@@ -1,5 +1,11 @@
 import os
 from subprocess import PIPE, Popen
+from jessetk.Vars import random_console_formatter, random_console_header1, random_console_header2
+import jessetk.Vars
+
+
+def clear_console(): return os.system(
+    'cls' if os.name in ('nt', 'dos') else 'clear')
 
 
 def run_test(start_date, finish_date):
@@ -17,8 +23,7 @@ def make_routes(template, anchor, dna_code):
         print(
             f"""(\033[32m'Bitfinex', 'BTC-USD', '2h', 'myStra', '{anchor}'\033[0m),\n""")
         exit()
-    # print(dna_code, 'dna code')
-    # template = template.replace("'" + anchor + "'", repr(dna_code))
+
     write_file('routes.py', template.replace(
         "'" + anchor + "'", repr(dna_code)))
 
@@ -41,11 +46,9 @@ def split_n_of_longs_shorts(line):
 def split_dates(line):
     return line.replace(' ', '').split('|')[-1].split('=>')  # Lazy man's reg^x
 
-# Split Exchange, Symbol, Timeframe, Strategy,
-# DNA while keeping spaces in exchange name
 
-
-def split_estfd(line):
+def split_estfd(line):                          # Split Exchange, Symbol, Timeframe, Strategy,
+    # DNA while keeping spaces in exchange name
     return [x.strip() for x in line.split('|')]
 
 
@@ -67,6 +70,47 @@ def print_tops_formatted(frmt, header1, header2, tr):
                 r['largest_win'], r['largest_lose'],
                 r['n_of_wins'], r['n_of_loses'],
                 r['paid_fees'], r['market_change']))
+
+
+def print_random_tops(sr, top_n):
+    print(
+        random_console_formatter.format(*random_console_header1))
+    print(
+        random_console_formatter.format(*random_console_header2))
+
+    for r in sr[0:top_n]:
+        print(
+            random_console_formatter.format(
+                r['start_date'],
+                r['finish_date'],
+                r['total_trades'],
+                r['n_of_longs'],
+                r['n_of_shorts'],
+                r['total_profit'],
+                r['max_dd'],
+                r['annual_return'],
+                r['win_rate'],
+                r['serenity'],
+                r['sharpe'],
+                r['calmar'],
+                r['win_strk'],
+                r['lose_strk'],
+                r['largest_win'],
+                r['largest_lose'],
+                r['n_of_wins'],
+                r['n_of_loses'],
+                r['paid_fees'],
+                r['market_change']))
+
+
+def print_tops_generic(frmt, header1, header2, tr):
+    print(
+        frmt.format(*header1))
+    print(
+        frmt.format(*header2))
+
+    for r in tr:
+        print(frmt.format(*tr))
 
 
 def create_csv_report(sorted_results, filename, header):
@@ -100,12 +144,10 @@ def create_csv_report(sorted_results, filename, header):
 
 
 def get_metrics3(console_output) -> dict:
-    import jessetk.Vars  # TODO Move import to outer scope
     metrics = jessetk.Vars.Metrics
     lines = console_output.splitlines()
 
     for index, line in enumerate(lines):
-
         if 'Aborted!' in line:
             print(console_output)
             print(
@@ -115,7 +157,6 @@ def get_metrics3(console_output) -> dict:
         if 'CandleNotFoundInDatabase' in line:
             print(console_output)
             return metrics
-            # exit(1)
 
         if 'Uncaught Exception' in line:
             print(console_output)
@@ -130,7 +171,8 @@ def get_metrics3(console_output) -> dict:
             metrics['start_date'], metrics['finish_date'] = split_dates(line)
 
         if 'exchange' in line and 'symbol' in line and 'timeframe' in line:
-            metrics['exchange'], metrics['symbol'], metrics['tf'], metrics['strategy'], metrics['dna'] = split_estfd(lines[index+2])
+            metrics['exchange'], metrics['symbol'], metrics['tf'], metrics['strategy'], metrics['dna'] = split_estfd(
+                lines[index+2])
 
         if 'Total Closed Trades' in line:
             metrics['total_trades'] = split(line)
@@ -166,8 +208,8 @@ def get_metrics3(console_output) -> dict:
             metrics['lose_strk'] = split(line)
 
         if 'Longs | Shorts' in line:
-            metrics['n_of_longs'], metrics['n_of_shorts'] = split_n_of_longs_shorts(line)
-            print(metrics['n_of_longs'], metrics['n_of_shorts'])
+            metrics['n_of_longs'], metrics['n_of_shorts'] = split_n_of_longs_shorts(
+                line)
 
         if 'Largest Winning Trade' in line:
             metrics['largest_win'] = round(float(split(line)))
