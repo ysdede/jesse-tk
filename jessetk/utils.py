@@ -1,9 +1,10 @@
 import os
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 
 
 def run_test(start_date, finish_date):
-    process = Popen(['jesse', 'backtest', start_date, finish_date], stdout=PIPE)
+    process = Popen(['jesse', 'backtest', start_date,
+                    finish_date], stdout=PIPE)
     (output, err) = process.communicate()
     exit_code = process.wait()
     return output.decode('utf-8')
@@ -13,11 +14,13 @@ def make_routes(template, anchor, dna_code):
     if anchor not in template:
         os.system('color')
         print('\nReplace the dna strings in routes.py with anchors. eg:\n')
-        print(f"""(\033[32m'Bitfinex', 'BTC-USD', '2h', 'myStra', '{anchor}'\033[0m),\n""")
+        print(
+            f"""(\033[32m'Bitfinex', 'BTC-USD', '2h', 'myStra', '{anchor}'\033[0m),\n""")
         exit()
     # print(dna_code, 'dna code')
     # template = template.replace("'" + anchor + "'", repr(dna_code))
-    write_file('routes.py', template.replace("'" + anchor + "'", repr(dna_code)))
+    write_file('routes.py', template.replace(
+        "'" + anchor + "'", repr(dna_code)))
 
 
 def split(line):
@@ -33,6 +36,17 @@ def split_n_of_longs_shorts(line):
     shorts = ll[len(ll) - 1].replace('%', '')
     longs = ll[len(ll) - 3].replace('%', '')
     return longs, shorts
+
+
+def split_dates(line):
+    return line.replace(' ', '').split('|')[-1].split('=>')  # Lazy man's reg^x
+
+# Split Exchange, Symbol, Timeframe, Strategy,
+# DNA while keeping spaces in exchange name
+
+
+def split_estfd(line):
+    return [x.strip() for x in line.split('|')]
 
 
 def print_tops_formatted(frmt, header1, header2, tr):
@@ -86,7 +100,7 @@ def create_csv_report(sorted_results, filename, header):
 
 
 def get_metrics3(console_output) -> dict:
-    import jessetk.Vars
+    import jessetk.Vars  # TODO Move import to outer scope
     metrics = jessetk.Vars.Metrics
     lines = console_output.splitlines()
 
@@ -94,7 +108,8 @@ def get_metrics3(console_output) -> dict:
 
         if 'Aborted!' in line:
             print(console_output)
-            print("Aborted! error. Possibly pickle database is corrupt. Delete temp/ folder to fix.")
+            print(
+                "Aborted! error. Possibly pickle database is corrupt. Delete temp/ folder to fix.")
             exit(1)
 
         if 'CandleNotFoundInDatabase' in line:
@@ -104,10 +119,18 @@ def get_metrics3(console_output) -> dict:
 
         if 'Uncaught Exception' in line:
             print(console_output)
+            if 'must be within the range' in line:
+                print('Check DNA String in routes file!')
             exit(1)
 
         if 'No trades were made' in line:
             return metrics
+
+        if 'starting-ending date' in line:
+            metrics['start_date'], metrics['finish_date'] = split_dates(line)
+
+        if 'exchange' in line and 'symbol' in line and 'timeframe' in line:
+            metrics['exchange'], metrics['symbol'], metrics['tf'], metrics['strategy'], metrics['dna'] = split_estfd(lines[index+2])
 
         if 'Total Closed Trades' in line:
             metrics['total_trades'] = split(line)
@@ -144,6 +167,7 @@ def get_metrics3(console_output) -> dict:
 
         if 'Longs | Shorts' in line:
             metrics['n_of_longs'], metrics['n_of_shorts'] = split_n_of_longs_shorts(line)
+            print(metrics['n_of_longs'], metrics['n_of_shorts'])
 
         if 'Largest Winning Trade' in line:
             metrics['largest_win'] = round(float(split(line)))
