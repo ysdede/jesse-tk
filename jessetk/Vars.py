@@ -1,13 +1,14 @@
 datadir = 'jessetkdata'
 initial_test_message = 'Please wait while performing initial test...'
-csvd = '\t'
+csvd = '\t'  # csv delimiter
 
 Metrics = {
     'start_date': None,
     'finish_date': None,
     'exchange': 'None',
     'symbol': None,
-    'tf': None,
+    'tf': None,  # timeframe
+    'strategy': None,
     'dna': 'None',
     'total_trades': 0,
     'total_profit': 0,
