@@ -5,18 +5,22 @@ from copy import deepcopy
 from multiprocessing import cpu_count
 from pydoc import locate
 from subprocess import PIPE, Popen
-from time import gmtime, strftime
+from time import gmtime, sleep, strftime
 from timeit import default_timer as timer
 
 import click
 import jesse.helpers as jh
+from jesse.config import config
 from jesse.helpers import get_config
+from jesse.modes import backtest_mode
 from jesse.routes import router
+from jesse.services import db, report
+from jesse.services.selectors import get_exchange
 
 from jessetk import Vars, randomwalk, utils
 from jessetk.utils import clear_console
-from jessetk.Vars import (initial_test_message, random_file_header,
-                          refine_file_header, random_console_formatter)
+from jessetk.Vars import (initial_test_message, random_console_formatter,
+                          random_file_header, refine_file_header)
 
 # Python version validation.
 if jh.python_version() < 3.7:
@@ -229,13 +233,14 @@ def randomrefine(dna_file: str, start_date: str, finish_date: str, iterations: i
 
     rrefine.import_dnas()
     rrefine.routes_template = utils.read_file('routes.py')
-    
+
     results = []
     start = timer()
     print_initial_msg()
     for index, dnac in enumerate(rrefine.dnas, start=1):
         # Inject dna to routes.py
-        utils.make_routes(rrefine.routes_template, rrefine.anchor, dna_code=dnac[0])
+        utils.make_routes(rrefine.routes_template,
+                          rrefine.anchor, dna_code=dnac[0])
 
         # Run jesse backtest and grab console output  # TODO RUN RANDOM HERE
         console_output = utils.run_test(start_date, finish_date)
@@ -247,7 +252,8 @@ def randomrefine(dna_file: str, start_date: str, finish_date: str, iterations: i
             results.append(deepcopy(metric))
         # f.write(str(metric) + '\n')  # Logging disabled
         # f.flush()
-        sorted_results_prelist = sorted(results, key=lambda x: float(x['sharpe']), reverse=True)
+        sorted_results_prelist = sorted(
+            results, key=lambda x: float(x['sharpe']), reverse=True)
         rrefine.sorted_results = []
 
         if rrefine.eliminate:
@@ -274,7 +280,8 @@ def randomrefine(dna_file: str, start_date: str, finish_date: str, iterations: i
     else:
         rrefine.save_dnas(rrefine.sorted_results)
 
-    utils.create_csv_report(rrefine.sorted_results, rrefine.report_file_name, refine_file_header)
+    utils.create_csv_report(rrefine.sorted_results,
+                            rrefine.report_file_name, refine_file_header)
 
 
 # *******************
@@ -287,7 +294,7 @@ def randomrefine(dna_file: str, start_date: str, finish_date: str, iterations: i
 @click.option(
     '--cpu', default=0, show_default=True,
     help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
-def randomthtest(start_date: str, finish_date: str, iterations: int, width: int, cpu: int) -> None:
+def random(start_date: str, finish_date: str, iterations: int, width: int, cpu: int) -> None:
     """
                                 random walk backtest w/ threading.
                                 Enter period "YYYY-MM-DD" "YYYY-MM-DD
@@ -305,10 +312,9 @@ def randomthtest(start_date: str, finish_date: str, iterations: int, width: int,
         iterations = 32
         print(f'Iterations not provided, falling back to {iterations} iters!')
     if not width:
-        width = 40
+        width = 60
         print(
             f'Window width not provided, falling back to {width} days window!')
-
 
     iters = iterations
     processes = []
@@ -316,7 +322,7 @@ def randomthtest(start_date: str, finish_date: str, iterations: int, width: int,
     results = []
     sorted_results = []
     iters_completed = 0
-    
+
     if cpu > cpu_count():
         raise ValueError(
             f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
@@ -326,79 +332,12 @@ def randomthtest(start_date: str, finish_date: str, iterations: int, width: int,
         max_cpu = cpu
 
     print('Cpu count:', cpu_count(), 'Used:', max_cpu)
-    
+
     from jessetk.RandomWalkTh import RandomWalk
     rwth = RandomWalk(start_date, finish_date, iterations, width, max_cpu)
     rwth.run()
 
 #: /////////////////////
-
-@cli.command()
-@click.argument('start_date', required=True, type=str)
-@click.argument('finish_date', required=True, type=str)
-@click.argument('iterations', required=False, type=int)
-@click.argument('width', required=False, type=int)
-def random(start_date: str, finish_date: str, iterations: int, width: int) -> None:
-    """
-    random walk backtest. Enter period "YYYY-MM-DD" "YYYY-MM-DD
-                                number of tests to perform  eg. 40
-                                sample width in days        eg. 30"
-    """
-
-    os.chdir(os.getcwd())
-    validate_cwd()
-    validateconfig()
-    makedirs()
-
-    if start_date is None or finish_date is None:
-        print('Enter dates!')
-        exit()
-
-    if not iterations or iterations < 0:
-        iterations = 32
-        print(f'Iterations not provided, falling back to {iterations} iters!')
-    if not width:
-        width = 40
-        print(
-            f'Window width not provided, falling back to {width} days window!')
-
-    from jessetk.randomwalk import RandomWalk
-    random_walk = RandomWalk(start_date, finish_date, iterations, width)
-
-    print_initial_msg()
-    start = timer()
-    results = []
-    sorted_results = []
-    for index in range(1, iterations + 1):
-        # Create a random period between given period
-        rand_period_start, rand_period_finish = random_walk.make_random_period()
-
-        # Run jesse backtest and grab console output
-        console_output = utils.run_test(rand_period_start, rand_period_finish)
-
-        # Scrape console output and return metrics as a dict
-        metric = utils.get_metrics3(console_output)
-
-        if metric not in results:
-            results.append(copy.deepcopy(metric))
-
-        sorted_results = sorted(
-            results, key=lambda x: float(x['serenity']), reverse=True)
-
-        eta = ((timer() - start) / index) * (iterations - index)
-        eta_formatted = strftime("%H:%M:%S", gmtime(eta))
-
-        clear_console()
-        print(
-            f'{index}/{iterations}\teta: {eta_formatted} | {random_walk.exchange} '
-            f'| {random_walk.symbol} | {random_walk.timeframe} | {repr(random_walk.dna)} '
-            f'| Period: {start_date} -> {finish_date} | Sample width: {width}')
-
-        metric = {}
-        random_walk.print_tops_formatted(sorted_results)
-
-    utils.create_csv_report(
-        sorted_results, random_walk.report_file_name, random_file_header)
 
 
 @cli.command()
@@ -454,8 +393,9 @@ def randomsg(dna_file, start_date: str, finish_date: str, iterations: int, width
         # eta = ((timer() - start) / index) * (iterations - index)
         # eta_formatted = strftime("%H:%M:%S", gmtime(eta))
 
-
 # // *
+
+
 @cli.command()
 @click.argument('dna_file', required=True, type=str)
 @click.argument('start_date', required=True, type=str)
@@ -510,7 +450,6 @@ def testpairs(start_date: str, finish_date: str) -> None:
 @cli.command()
 @click.argument('start_date', required=True, type=str)
 @click.argument('finish_date', required=True, type=str)
-@click.argument('hyperparameters', required=False, type=str)
 @click.option('--debug/--no-debug', default=False,
               help='Displays logging messages instead of the progressbar. Used for debugging your strategy.')
 @click.option('--csv/--no-csv', default=False,
@@ -525,31 +464,27 @@ def testpairs(start_date: str, finish_date: str) -> None:
               help="Generates an output that can be copy-and-pasted into tradingview.com's pine-editor too see the trades in their charts.")
 @click.option('--full-reports/--no-full-reports', default=False,
               help="Generates QuantStats' HTML output with metrics reports like Sharpe ratio, Win rate, Volatility, etc., and batch plotting for visualizing performance, drawdowns, rolling statistics, monthly returns, etc.")
-def backtest(start_date: str, finish_date: str, hyperparameters: str, debug: bool, csv: bool, json: bool, fee: bool, chart: bool,
-             tradingview: bool, full_reports: bool) -> None:
+@click.option(
+    '--dna', default='None', show_default=True, help='Base32 encoded dna string payload')
+def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bool, fee: bool, chart: bool,
+             tradingview: bool, full_reports: bool, dna: str) -> None:
     """
     backtest mode. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
     validate_cwd()
-    # router.routes[0].strategy_name
-    # router.routes[0].exchange
-    # router.set_routes(local_router.routes)
-    # router.set_extra_candles(local_router.extra_candles)
-    # inject local files
-    # router.routes[0].symbol = 'MATIC-USDT'
-    # print(router.routes[0].__dict__)
-    # exit()
-    # router.routes[0].timeframe
-    from jesse.config import config
-    from jesse.services import report
+    
     config['app']['trading_mode'] = 'backtest'
     # register_custom_exception_handler()
-    from jesse.modes import backtest_mode
-    from jesse.services import db
-    from jesse.services.selectors import get_exchange
 
     # debug flag
     config['app']['debug_mode'] = debug
+    print('Current DNA:', router.routes[0].dna)
+    sleep(3)
+
+    if dna != 'None':
+        router.routes[0].dna = utils.decode_base32(dna)
+        print('New DNA:', router.routes[0].dna)
+        sleep(3)
 
     # fee flag
     if not fee:
