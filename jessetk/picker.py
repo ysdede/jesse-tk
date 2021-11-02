@@ -2,6 +2,7 @@ import importlib
 import os
 
 import jesse.helpers as jh
+
 from jessetk.Vars import datadir
 
 
@@ -80,7 +81,7 @@ class picker:
 
     def sortdnas(self):
         # read log file to log_body variable
-        self.read_log()  # log_body = self.read_log(inputfile)
+        self.read_log()
 
         # Extract useful information from log file, return as 2d array
         self.rows = self.pick_lines()

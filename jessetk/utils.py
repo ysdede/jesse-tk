@@ -1,32 +1,26 @@
+import base64
 import os
 from subprocess import PIPE, Popen
-from jessetk.Vars import random_console_formatter, random_console_header1, random_console_header2
+
 import jessetk.Vars
-import base64
+from jessetk.Vars import random_console_formatter, random_console_header1, random_console_header2
 
-def encode_base64(s):
-    s_bytes = s.encode('ascii')
-    base64_bytes = base64.urlsafe_b64encode(s_bytes)
-    return base64_bytes.decode('ascii')
-
-def decode_base64(b):
-    base64_bytes = b.encode('ascii')
-    message_bytes = base64.urlsafe_b64decode(base64_bytes)
-    return message_bytes.decode('ascii')
 
 def encode_base32(s):
     s_bytes = s.encode('ascii')
-    base32_bytes = base64.b32encode(s_bytes) #urlsafe_b64encode(s_bytes)
+    base32_bytes = base64.b32encode(s_bytes)
     return base32_bytes.decode('ascii')
+
 
 def decode_base32(b):
     base32_bytes = b.encode('ascii')
     try:
-        message_bytes = base64.b32decode(base32_bytes) #urlsafe_b64decode(base64_bytes)
+        message_bytes = base64.b32decode(base32_bytes)
     except:
-        print('bbbbbbbbbbbbbbbbb:', b)
+        print(b)
         exit()
     return message_bytes.decode('ascii')
+
 
 def clear_console(): return os.system(
     'cls' if os.name in ('nt', 'dos') else 'clear')
@@ -34,7 +28,7 @@ def clear_console(): return os.system(
 
 def run_test(start_date, finish_date):
     process = Popen(['jesse', 'backtest', start_date,
-                    finish_date], stdout=PIPE)
+                     finish_date], stdout=PIPE)
     (output, err) = process.communicate()
     exit_code = process.wait()
     return output.decode('utf-8')
@@ -71,7 +65,8 @@ def split_dates(line):
     return line.replace(' ', '').split('|')[-1].split('=>')  # Lazy man's reg^x
 
 
-def split_estfd(line):                          # Split Exchange, Symbol, Timeframe, Strategy,
+def split_estfd(line):
+    # Split Exchange, Symbol, Timeframe, Strategy,
     # DNA while keeping spaces in exchange name
     return [x.strip() for x in line.split('|')]
 
@@ -103,6 +98,7 @@ def print_random_header():
         random_console_formatter.format(*random_console_header1))
     print(
         random_console_formatter.format(*random_console_header2))
+
 
 def print_random_tops(sr, top_n):
     for r in sr[0:top_n]:
@@ -199,7 +195,7 @@ def get_metrics3(console_output) -> dict:
 
         if 'exchange' in line and 'symbol' in line and 'timeframe' in line:
             metrics['exchange'], metrics['symbol'], metrics['tf'], metrics['strategy'], metrics['dna'] = split_estfd(
-                lines[index+2])
+                lines[index + 2])
 
         if 'Total Closed Trades' in line:
             metrics['total_trades'] = int(split(line))

@@ -1,20 +1,18 @@
 import random
 from copy import deepcopy
 from datetime import datetime, timedelta
-from multiprocessing import cpu_count
 from subprocess import PIPE, Popen
 from time import gmtime, strftime
 from timeit import default_timer as timer
 
-from jesse.routes import router
-
-import jessetk.Vars as Vars
-from jessetk import utils
-from jessetk.utils import clear_console
-from jessetk.Vars import datadir, random_file_header, random_console_formatter
 import pandas as pd
-import numpy as np
+from jesse.routes import router
 from numpy import array, average
+
+from jessetk import utils
+from jessetk.Vars import datadir, random_file_header, random_console_formatter
+from jessetk.utils import clear_console
+
 
 # Random walk backtesting w/ threading
 class RandomWalk:

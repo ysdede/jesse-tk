@@ -1,30 +1,22 @@
-import copy
-from copy import deepcopy
 import importlib
 import os
 import sys
+from copy import deepcopy
 from datetime import datetime
+from subprocess import PIPE, Popen
 from time import strftime, gmtime
 from timeit import default_timer as timer
 
+from jesse.modes import backtest_mode
 from jesse.routes import router
+from jesse.services import db
+from jesse.services import report
 
 import jessetk.Vars as Vars
 import jessetk.utils
 from jessetk import utils, print_initial_msg, clear_console
 from jessetk.Vars import datadir
-from jessetk.Vars import refine_file_header, random_console_formatter
-
-from jesse.config import config
-from jesse.services import report
-from jesse.modes import backtest_mode
-from jesse.services import db
-from jesse.services.selectors import get_exchange
-from time import sleep
-from subprocess import PIPE, Popen
-import pandas as pd
-import numpy as np
-from numpy import array, average
+from jessetk.Vars import refine_file_header
 
 
 class Refine:
@@ -37,16 +29,14 @@ class Refine:
         self.start_date = start_date
         self.finish_date = finish_date
         self.cpu = cpu
-        # print('CPU:', self.cpu)
         self.eliminate = eliminate
 
         self.jessetkdir = datadir
         self.anchor = 'DNA!'
         self.sort_by = {'serenity': 12, 'sharpe': 13, 'calmar': 14}
 
-        # config['app']['trading_mode'] = 'backtest'
         self.metrics = []
-        
+
         self.n_of_iters = 0
         self.results = []
         self.sorted_results = []
@@ -58,18 +48,14 @@ class Refine:
         self.n_of_dnas = None
 
         r = router.routes[0]  # Read first route from routes.py
-        # print('r.symbol', r.symbol)
-        # exit()
         self.exchange = r.exchange
         self.pair = r.symbol
-        # print('Pair:', self.pair)
         self.timeframe = r.timeframe
         self.strategy = r.strategy_name
 
         self.removesimilardnas = False
 
         self.ts = datetime.now().strftime("%Y%m%d %H%M%S")
-        # TODO Create results, logs, dnafiles folders if needed.
         self.filename = f'Refine-{self.exchange}-{self.pair}-{self.timeframe}--{start_date}--{finish_date}'
 
         self.report_file_name = f'{self.jessetkdir}/results/{self.filename}--{self.ts}.csv'
@@ -85,7 +71,7 @@ class Refine:
         self.import_dnas()
         iters = self.n_of_dnas
         self.n_of_iters = self.n_of_dnas
-        index = 0  # TODO lots of vars like iters ...
+        index = 0  # TODO Reduce number of vars ...
         start = timer()
 
         while iters > 0:
@@ -93,17 +79,13 @@ class Refine:
 
             for _ in range(max_cpu):
                 if iters > 0:
-                    # Create a random period between given period
                     dna = self.dnas[index][0]
-                    
-                    # print('DNA:', dna, utils.encode_base32(dna), utils.decode_base32(utils.encode_base32(dna)))
 
                     commands.append(
                         f"jesse-tk backtest {self.start_date} {self.finish_date} --dna {utils.encode_base32(dna)}")
                     index += 1
                     iters -= 1
-            # print('Commands:', commands)
-            
+
             processes = [Popen(cmd, shell=True, stdout=PIPE) for cmd in commands]
             # wait for completion
             for p in processes:
@@ -111,6 +93,7 @@ class Refine:
 
                 # Get thread's console output
                 (output, err) = p.communicate()
+                # debug
                 # print(output.decode('utf-8'))
                 # exit()
                 iters_completed += 1
@@ -143,7 +126,7 @@ class Refine:
                 self.print_tops_formatted()
 
         if self.eliminate:
-            self.save_dnas(self.sorted_results, dna_file)
+            self.save_dnas(self.sorted_results, self.dna_py_file)
         else:
             self.save_dnas(self.sorted_results)
 
@@ -151,8 +134,6 @@ class Refine:
                                 self.report_file_name, refine_file_header)
 
     def runold(self, dna_file: str, start_date: str, finish_date: str):
-        # from jessetk.refine import refine
-        # refiner = refine(dna_file, start_date, finish_date)
         self.import_dnas()
         self.routes_template = utils.read_file('routes.py')
 
@@ -179,7 +160,7 @@ class Refine:
             metric['finish_date'] = self.finish_date
 
             if metric not in results:
-                results.append(copy.deepcopy(metric))
+                results.append(deepcopy(metric))
             # f.write(str(metric) + '\n')  # Logging disabled
             # f.flush()
             sorted_results_prelist = sorted(
@@ -203,9 +184,6 @@ class Refine:
 
             self.print_tops_formatted()
 
-        # Restore routes.py
-        utils.write_file('routes.py', self.routes_template)
-
         if self.eliminate:
             self.save_dnas(self.sorted_results, dna_file)
         else:
@@ -213,43 +191,9 @@ class Refine:
 
         utils.create_csv_report(self.sorted_results,
                                 self.report_file_name, refine_file_header)
-        # # Sync and close log file
-        # os.fsync(f.fileno())
-        # f.close()
-
-
-    def set_dna(self, dna: str):
-        router.routes[0].dna = dna
-
-    def run_backtest(self, start_date, finish_date, dna: str = None):
-        self.metrics = []
-        print('Current DNA:', router.routes[0].dna)
-        sleep(3)
-
-        if dna:
-            self.set_dna(dna)
-        
-        print('New DNA:', router.routes[0].dna)
-        sleep(3)
-
-        # backtest_mode._initialized_strategies()
-        backtest_mode.run(start_date, finish_date, chart=False, tradingview=False, csv=False,
-                          json=False, full_reports=False)
-
-        try:    # Catch error when there's no trades.
-            self.metrics = report.portfolio_metrics()
-            # print(self.metrics)
-        except:
-            print('No Trades, no metrics!')
-
-        db.close_connection()
-
-        return self.metrics
 
     def signal_handler(self, sig, frame):
         print('You pressed Ctrl+C!')
-        # Restore routes.py
-        # jessetk.utils.write_file('routes.py', self.routes_template)
         sys.exit(0)
 
     def import_dnas(self):
@@ -263,6 +207,7 @@ class Refine:
         self.n_of_dnas = len(self.dnas)
         print(f'Imported {self.n_of_dnas} dnas...')
 
+    # v TODO Move to utils
     def print_tops_formatted(self):
         print('\x1b[5;30;44m', end='')
         print(

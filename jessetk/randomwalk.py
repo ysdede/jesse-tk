@@ -1,9 +1,7 @@
 import random
 from datetime import datetime
 from datetime import timedelta
-
 from jesse.routes import router
-
 import jessetk.Vars as Vars
 from jessetk.Vars import datadir
 
@@ -20,8 +18,10 @@ class RandomWalk:
         self.start_date_object = datetime.strptime(start_date,
                                                    '%Y-%m-%d')  # start_date as datetime object, to make calculations easier.
         self.finish_date_object = datetime.strptime(finish_date, '%Y-%m-%d')
-        self.test_period_length = self.finish_date_object - self.start_date_object  # Test period length as days
-        self.rand_end = self.test_period_length - timedelta(days=width)  # period - windows width
+        self.test_period_length = self.finish_date_object - \
+            self.start_date_object  # Test period length as days
+        self.rand_end = self.test_period_length - \
+            timedelta(days=width)  # period - windows width
 
         self.results = []
         self.sorted_results = []
@@ -43,7 +43,8 @@ class RandomWalk:
         random_number = None
 
         for _ in range(self.max_retries):
-            random_number = random.randint(0, self.rand_end.days)  # TODO Quantum random?
+            random_number = random.randint(
+                0, self.rand_end.days)  # TODO Quantum random?
             if random_number not in self.random_numbers:
                 break
 
@@ -53,33 +54,3 @@ class RandomWalk:
             days=random_number)  # Add random number of days to start date
         random_finish_date = random_start_date + timedelta(days=self.width)
         return random_start_date.strftime('%Y-%m-%d'), random_finish_date.strftime('%Y-%m-%d')
-
-    def print_tops_formatted(self, sorted_results):
-        print(
-            Vars.random_console_formatter.format(*Vars.random_console_header1))
-        print(
-            Vars.random_console_formatter.format(*Vars.random_console_header2))
-
-        for r in sorted_results[0:40]:
-            print(
-                Vars.random_console_formatter.format(
-                    r['start_date'],
-                    r['finish_date'],
-                    r['total_trades'],
-                    r['n_of_longs'],
-                    r['n_of_shorts'],
-                    r['total_profit'],
-                    r['max_dd'],
-                    r['annual_return'],
-                    r['win_rate'],
-                    r['serenity'],
-                    r['sharpe'],
-                    r['calmar'],
-                    r['win_strk'],
-                    r['lose_strk'],
-                    r['largest_win'],
-                    r['largest_lose'],
-                    r['n_of_wins'],
-                    r['n_of_loses'],
-                    r['paid_fees'],
-                    r['market_change']))

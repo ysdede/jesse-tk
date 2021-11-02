@@ -1,25 +1,24 @@
+import click
+import jesse.helpers as jh
 import os
 import sys
 from copy import deepcopy
-from multiprocessing import cpu_count
-from pydoc import locate
-from subprocess import PIPE, Popen
-from time import gmtime, sleep, strftime
-from timeit import default_timer as timer
-
-import click
-import jesse.helpers as jh
 from jesse.config import config
 from jesse.helpers import get_config
 from jesse.modes import backtest_mode
 from jesse.routes import router
 from jesse.services import db, report
 from jesse.services.selectors import get_exchange
+from multiprocessing import cpu_count
+from pydoc import locate
+from subprocess import PIPE, Popen
+from time import gmtime, sleep, strftime
+from timeit import default_timer as timer
 
 from jessetk import Vars, randomwalk, utils
-from jessetk.utils import clear_console
 from jessetk.Vars import (initial_test_message, random_console_formatter,
                           random_file_header, refine_file_header)
+from jessetk.utils import clear_console
 
 # Python version validation.
 if jh.python_version() < 3.7:
@@ -335,8 +334,6 @@ def random(start_date: str, finish_date: str, iterations: int, width: int, cpu: 
     rwth = RandomWalk(start_date, finish_date, iterations, width, max_cpu)
     rwth.run()
 
-#: /////////////////////
-
 
 @cli.command()
 @click.argument('dna_file', required=True, type=str)
@@ -382,16 +379,12 @@ def randomsg(dna_file, start_date: str, finish_date: str, iterations: int, width
 
         r = refine(dna_file, rand_period_start,
                    rand_period_finish, eliminate=True)
+        #      v ?
         r.run(dna_file, rand_period_start, rand_period_finish)
 
         if len(r.sorted_results) <= 5:
             print('Target reached, exiting...')
             break
-
-        # eta = ((timer() - start) / index) * (iterations - index)
-        # eta_formatted = strftime("%H:%M:%S", gmtime(eta))
-
-# // *
 
 
 @cli.command()
