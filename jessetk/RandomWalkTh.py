@@ -11,8 +11,10 @@ from jesse.routes import router
 import jessetk.Vars as Vars
 from jessetk import utils
 from jessetk.utils import clear_console
-from jessetk.Vars import datadir, random_file_header
-
+from jessetk.Vars import datadir, random_file_header, random_console_formatter
+import pandas as pd
+import numpy as np
+from numpy import array, average
 
 # Random walk backtesting w/ threading
 class RandomWalk:
@@ -37,6 +39,7 @@ class RandomWalk:
         self.results = []
         self.sorted_results = []
         self.random_numbers = []
+        self.mean = []
 
         r = router.routes[0]  # Read first route from routes.py
         self.strategy = r.strategy_name  # get strategy name to create filenames
@@ -89,13 +92,44 @@ class RandomWalk:
                 sorted_results = sorted(
                     results, key=lambda x: float(x['serenity']), reverse=True)
 
+                res_as_list = []
+                for r in results:
+                    r_vals_as_list = [
+                    r['start_date'],
+                    r['finish_date'],
+                    r['total_trades'],
+                    r['n_of_longs'],
+                    r['n_of_shorts'],
+                    r['total_profit'],
+                    r['max_dd'],
+                    r['annual_return'],
+                    r['win_rate'],
+                    r['serenity'],
+                    r['sharpe'],
+                    r['calmar'],
+                    r['win_strk'],
+                    r['lose_strk'],
+                    r['largest_win'],
+                    r['largest_lose'],
+                    r['n_of_wins'],
+                    r['n_of_loses'],
+                    r['paid_fees'],
+                    r['market_change']]  # TODO Make it reusable
+                    r_pd = pd.to_numeric(r_vals_as_list, errors='coerce')
+                    res_as_list.append(r_pd)
+
+                res_array = array(res_as_list)
+                mean = average(res_array, axis=0)
+                mean = [round(x, 2) for x in mean]
+
+
                 eta_per_iter = (timer() - start) / iters_completed
                 speed = round(width / eta_per_iter, 2)
                 eta = eta_per_iter * (self.n_of_iters - iters)         # remaining
                 remaining_time = eta_per_iter * self.n_of_iters        # estimated total time
                 eta_formatted = strftime("%H:%M:%S", gmtime(eta))
                 remaining_formatted = strftime("%H:%M:%S", gmtime(remaining_time))
-
+                
                 clear_console()
 
                 print(
@@ -104,7 +138,9 @@ class RandomWalk:
                     f'| Period: {self.start_date} -> {self.finish_date} | Sample width: {self.width} v7')
 
                 metric = {}
-                utils.print_random_tops(sorted_results, 40)
+                utils.print_random_header()
+                print('\x1b[6;30;42m' + random_console_formatter.format(*mean) + '\x1b[0m')
+                utils.print_random_tops(sorted_results, 10)
 
 
         utils.create_csv_report(
