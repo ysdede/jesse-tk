@@ -1,16 +1,22 @@
 import copy
 import os
 import sys
+from copy import deepcopy
+from multiprocessing import cpu_count
 from pydoc import locate
-from time import strftime, gmtime
+from subprocess import PIPE, Popen
+from time import gmtime, strftime
 from timeit import default_timer as timer
 
 import click
 import jesse.helpers as jh
 from jesse.helpers import get_config
 from jesse.routes import router
-from jessetk import randomwalk, utils, Vars
-from jessetk.Vars import initial_test_message, random_file_header, refine_file_header
+
+from jessetk import Vars, randomwalk, utils
+from jessetk.utils import clear_console
+from jessetk.Vars import (initial_test_message, random_file_header,
+                          refine_file_header, random_console_formatter)
 
 # Python version validation.
 if jh.python_version() < 3.7:
@@ -26,10 +32,6 @@ sys.path.insert(0, os.getcwd())
 
 ls = os.listdir('.')
 is_jesse_project = 'strategies' in ls and 'config.py' in ls and 'storage' in ls and 'routes.py' in ls
-
-
-def clear_console(): return os.system(
-    'cls' if os.name in ('nt', 'dos') else 'clear')
 
 
 def inject_local_config() -> None:
@@ -101,8 +103,8 @@ def pick(dna_log_file, sort_criteria, len1, len2) -> None:
     os.chdir(os.getcwd())
     validate_cwd()
 
-    from jesse.routes import router
     import jesse.helpers as jh
+    from jesse.routes import router
 
     makedirs()
     r = router.routes[0]  # Read first route from routes.py
@@ -163,6 +165,119 @@ def refineth(dna_file, start_date: str, finish_date: str, eliminate: bool) -> No
     r = refine(dna_file, start_date, finish_date, eliminate)
     r.run(dna_file, start_date, finish_date)
 
+# *******************
+
+
+@cli.command()
+@click.argument('dna_file', required=True, type=str)
+@click.argument('start_date', required=True, type=str)
+@click.argument('finish_date', required=True, type=str)
+@click.argument('iterations', required=False, type=int)
+@click.argument('width', required=False, type=int)
+@click.option(
+    '--cpu', default=0, show_default=True,
+    help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
+def randomrefine(dna_file: str, start_date: str, finish_date: str, iterations: int, width: int, cpu: int) -> None:
+    """
+                                random walk backtest w/ threading.
+                                Enter period "YYYY-MM-DD" "YYYY-MM-DD
+                                Number of tests to perform  eg. 40
+                                Sample width in days        eg. 30"
+                                Thread counts to use        eg. 4
+    """
+
+    os.chdir(os.getcwd())
+    validate_cwd()
+    validateconfig()
+    makedirs()
+
+    from jessetk.Vars import datadir
+    os.makedirs(f'./{datadir}/results', exist_ok=True)
+
+    if not eliminate:
+        eliminate = False
+
+    from jessetk.refine import refine
+    r = refine(dna_file, start_date, finish_date, eliminate)
+    r.run(dna_file, start_date, finish_date)
+
+    if not iterations or iterations < 0:
+        iterations = 32
+        print(f'Iterations not provided, falling back to {iterations} iters!')
+    if not width:
+        width = 40
+        print(
+            f'Window width not provided, falling back to {width} days window!')
+
+    if cpu > cpu_count():
+        raise ValueError(
+            f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
+    elif cpu == 0:
+        max_cpu = cpu_count()
+    else:
+        max_cpu = cpu
+
+    print('Cpu count:', cpu_count(), 'Used:', max_cpu)
+    from jessetk.RandomRefine import RandomRefine
+    from jessetk.RandomWalkTh import RandomWalk
+
+    # TODO
+    rrefine = RandomRefine(dna_file, start_date, finish_date, False)
+    rwth = RandomWalk(start_date, finish_date, iterations, width, max_cpu)
+    rwth.run()
+    #
+
+    rrefine.import_dnas()
+    rrefine.routes_template = utils.read_file('routes.py')
+    
+    results = []
+    start = timer()
+    print_initial_msg()
+    for index, dnac in enumerate(rrefine.dnas, start=1):
+        # Inject dna to routes.py
+        utils.make_routes(rrefine.routes_template, rrefine.anchor, dna_code=dnac[0])
+
+        # Run jesse backtest and grab console output  # TODO RUN RANDOM HERE
+        console_output = utils.run_test(start_date, finish_date)
+
+        # Scrape console output and return metrics as a dict
+        metric = utils.get_metrics3(console_output)
+
+        if metric not in results:
+            results.append(deepcopy(metric))
+        # f.write(str(metric) + '\n')  # Logging disabled
+        # f.flush()
+        sorted_results_prelist = sorted(results, key=lambda x: float(x['sharpe']), reverse=True)
+        rrefine.sorted_results = []
+
+        if rrefine.eliminate:
+            for r in sorted_results_prelist:
+                if float(r['sharpe']) > 0:
+                    rrefine.sorted_results.append(r)
+        else:
+            rrefine.sorted_results = sorted_results_prelist
+
+        clear_console()
+
+        eta = ((timer() - start) / index) * (self.n_of_dnas - index)
+        eta_formatted = strftime("%H:%M:%S", gmtime(eta))
+        print(
+            f'{index}/{rrefine.n_of_dnas}\teta: {eta_formatted} | {rrefine.pair} '
+            f'| {rrefine.timeframe} | {rrefine.start_date} -> {rrefine.finish_date}')
+
+        rrefine.print_tops_formatted()
+
+    utils.write_file('routes.py', rrefine.routes_template)  # Restore routes.py
+
+    if rrefine.eliminate:
+        rrefine.save_dnas(rrefine.sorted_results, dna_file)
+    else:
+        rrefine.save_dnas(rrefine.sorted_results)
+
+    utils.create_csv_report(rrefine.sorted_results, rrefine.report_file_name, refine_file_header)
+
+
+# *******************
 
 @cli.command()
 @click.argument('start_date', required=True, type=str)
@@ -172,7 +287,7 @@ def refineth(dna_file, start_date: str, finish_date: str, eliminate: bool) -> No
 @click.option(
     '--cpu', default=0, show_default=True,
     help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
-def randomth(start_date: str, finish_date: str, iterations: int, width: int, cpu: int) -> None:
+def randomthtest(start_date: str, finish_date: str, iterations: int, width: int, cpu: int) -> None:
     """
                                 random walk backtest w/ threading.
                                 Enter period "YYYY-MM-DD" "YYYY-MM-DD
@@ -194,22 +309,14 @@ def randomth(start_date: str, finish_date: str, iterations: int, width: int, cpu
         print(
             f'Window width not provided, falling back to {width} days window!')
 
-    from subprocess import Popen, PIPE
-    from timeit import default_timer as timer
-    from multiprocessing import cpu_count
-    from copy import deepcopy
 
-    max_cpu = cpu_count()
     iters = iterations
     processes = []
     commands = []
     results = []
     sorted_results = []
     iters_completed = 0
-
-    from jessetk.randomwalk import RandomWalk
-    random_walk = RandomWalk(start_date, finish_date, 1, width)
-
+    
     if cpu > cpu_count():
         raise ValueError(
             f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
@@ -219,56 +326,12 @@ def randomth(start_date: str, finish_date: str, iterations: int, width: int, cpu
         max_cpu = cpu
 
     print('Cpu count:', cpu_count(), 'Used:', max_cpu)
+    
+    from jessetk.RandomWalkTh import RandomWalk
+    rwth = RandomWalk(start_date, finish_date, iterations, width, max_cpu)
+    rwth.run()
 
-    start = timer()
-    while iters > 0:
-        commands = []
-        for _ in range(max_cpu):
-            if iters > 0:
-                # Create a random period between given period
-                rand_period_start, rand_period_finish = random_walk.make_random_period()
-                commands.append(
-                    f'jesse-tk backtest {rand_period_start} {rand_period_finish}')
-                iters -= 1
-
-        processes = [Popen(cmd, stdout=PIPE) for cmd in commands]
-        # wait for completion
-        for p in processes:
-            p.wait()
-
-            # Get thread's console output
-            (output, err) = p.communicate()
-            iters_completed += 1
-
-            # Map console output to a dict
-            metric = utils.get_metrics3(output.decode('utf-8'))
-
-            if metric not in results:
-                results.append(deepcopy(metric))
-
-            sorted_results = sorted(
-                results, key=lambda x: float(x['serenity']), reverse=True)
-
-            eta_per_iter = (timer() - start) / iters_completed
-            speed = round(width / eta_per_iter, 2)
-            eta = eta_per_iter * (iterations - iters_completed) # Remaining
-            remaining_time = eta_per_iter * iterations          # estimated total time
-            eta_formatted = strftime("%H:%M:%S", gmtime(eta))
-            remaining_formatted = strftime("%H:%M:%S", gmtime(remaining_time))
-
-            clear_console()
-
-            print(
-                f'{iters_completed}/{iterations}\teta: {eta_formatted}/{remaining_formatted} | Speed: {speed} days/sec | {metric["exchange"]} '
-                f'| {metric["symbol"]} | {metric["tf"]} | {repr(metric["dna"])} '
-                f'| Period: {start_date} -> {finish_date} | Sample width: {width} v4')
-
-            metric = {}
-            random_walk.print_tops_formatted(sorted_results)
-
-    utils.create_csv_report(
-        sorted_results, random_walk.report_file_name, random_file_header)
-
+#: /////////////////////
 
 @cli.command()
 @click.argument('start_date', required=True, type=str)
@@ -316,22 +379,9 @@ def random(start_date: str, finish_date: str, iterations: int, width: int) -> No
         # Scrape console output and return metrics as a dict
         metric = utils.get_metrics3(console_output)
 
-        # # Shared values TODO Make it common for all tools
-        # metric['dna'] = random_walk.dna
-        # metric['exchange'] = random_walk.exchange
-        # metric['symbol'] = random_walk.symbol
-        # metric['tf'] = random_walk.timeframe
-
-        # # Add test specific values
-        # metric['start_date'] = rand_period_start
-        # metric['finish_date'] = rand_period_finish
-
         if metric not in results:
             results.append(copy.deepcopy(metric))
 
-        # f.write(str(metric) + '\n')  # Logging disabled
-        # f.flush()
-        # random_walk.sorted_results = sorted(results, key=lambda x: float(x['serenity']), reverse=True)
         sorted_results = sorted(
             results, key=lambda x: float(x['serenity']), reverse=True)
 
@@ -359,7 +409,8 @@ def random(start_date: str, finish_date: str, iterations: int, width: int) -> No
 @click.argument('width', required=False, type=int)
 def randomsg(dna_file, start_date: str, finish_date: str, iterations: int, width: int) -> None:
     """
-    random walk backtest. Enter period "YYYY-MM-DD" "YYYY-MM-DD
+    random walk backtest w/ elimination
+                                Enter period "YYYY-MM-DD" "YYYY-MM-DD
                                 number of tests to perform  eg. 40
                                 sample width in days        eg. 30"
     """
@@ -480,25 +531,21 @@ def backtest(start_date: str, finish_date: str, hyperparameters: str, debug: boo
     backtest mode. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
     validate_cwd()
-    from jesse.services import report
-
     # router.routes[0].strategy_name
     # router.routes[0].exchange
     # router.set_routes(local_router.routes)
     # router.set_extra_candles(local_router.extra_candles)
     # inject local files
-
     # router.routes[0].symbol = 'MATIC-USDT'
-
     # print(router.routes[0].__dict__)
     # exit()
     # router.routes[0].timeframe
-
     from jesse.config import config
+    from jesse.services import report
     config['app']['trading_mode'] = 'backtest'
     # register_custom_exception_handler()
-    from jesse.services import db
     from jesse.modes import backtest_mode
+    from jesse.services import db
     from jesse.services.selectors import get_exchange
 
     # debug flag
