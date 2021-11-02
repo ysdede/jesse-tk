@@ -2,7 +2,31 @@ import os
 from subprocess import PIPE, Popen
 from jessetk.Vars import random_console_formatter, random_console_header1, random_console_header2
 import jessetk.Vars
+import base64
 
+def encode_base64(s):
+    s_bytes = s.encode('ascii')
+    base64_bytes = base64.urlsafe_b64encode(s_bytes)
+    return base64_bytes.decode('ascii')
+
+def decode_base64(b):
+    base64_bytes = b.encode('ascii')
+    message_bytes = base64.urlsafe_b64decode(base64_bytes)
+    return message_bytes.decode('ascii')
+
+def encode_base32(s):
+    s_bytes = s.encode('ascii')
+    base32_bytes = base64.b32encode(s_bytes) #urlsafe_b64encode(s_bytes)
+    return base32_bytes.decode('ascii')
+
+def decode_base32(b):
+    base32_bytes = b.encode('ascii')
+    try:
+        message_bytes = base64.b32decode(base32_bytes) #urlsafe_b64decode(base64_bytes)
+    except:
+        print('bbbbbbbbbbbbbbbbb:', b)
+        exit()
+    return message_bytes.decode('ascii')
 
 def clear_console(): return os.system(
     'cls' if os.name in ('nt', 'dos') else 'clear')
@@ -40,7 +64,7 @@ def split_n_of_longs_shorts(line):
     ll = line.split(' ')
     shorts = ll[len(ll) - 1].replace('%', '')
     longs = ll[len(ll) - 3].replace('%', '')
-    return longs, shorts
+    return int(longs), int(shorts)
 
 
 def split_dates(line):
@@ -53,10 +77,12 @@ def split_estfd(line):                          # Split Exchange, Symbol, Timefr
 
 
 def print_tops_formatted(frmt, header1, header2, tr):
+    print('\x1b[6;34;40m')
     print(
         frmt.format(*header1))
     print(
         frmt.format(*header2))
+    print('\x1b[0m')
 
     for r in tr:
         print(
@@ -72,12 +98,13 @@ def print_tops_formatted(frmt, header1, header2, tr):
                 r['paid_fees'], r['market_change']))
 
 
-def print_random_tops(sr, top_n):
+def print_random_header():
     print(
         random_console_formatter.format(*random_console_header1))
     print(
         random_console_formatter.format(*random_console_header2))
 
+def print_random_tops(sr, top_n):
     for r in sr[0:top_n]:
         print(
             random_console_formatter.format(
@@ -175,56 +202,55 @@ def get_metrics3(console_output) -> dict:
                 lines[index+2])
 
         if 'Total Closed Trades' in line:
-            metrics['total_trades'] = split(line)
+            metrics['total_trades'] = int(split(line))
 
         if 'Total Net Profit' in line:
-            metrics['total_profit'] = split(line)
+            metrics['total_profit'] = round(float(split(line)), 2)
 
         if 'Max Drawdown' in line:
-            metrics['max_dd'] = split(line)
+            metrics['max_dd'] = round(float(split(line)), 2)
 
         if 'Total Paid Fees' in line:
-            metrics['paid_fees'] = split(line)
+            metrics['paid_fees'] = round(float(split(line)), 2)
 
         if 'Annual Return' in line:
-            metrics['annual_return'] = float(split(line))
+            metrics['annual_return'] = round(float(split(line)), 2)
 
         if 'Percent Profitable' in line:
-            metrics['win_rate'] = split(line)
+            metrics['win_rate'] = int(split(line))
 
         if 'Serenity Index' in line:
-            metrics['serenity'] = split(line)
+            metrics['serenity'] = round(float(split(line)), 2)
 
         if 'Sharpe Ratio' in line:
-            metrics['sharpe'] = split(line)
+            metrics['sharpe'] = round(float(split(line)), 2)
 
         if 'Calmar Ratio' in line:
-            metrics['calmar'] = split(line)
+            metrics['calmar'] = round(float(split(line)), 2)
 
         if 'Winning Streak' in line:
-            metrics['win_strk'] = split(line)
+            metrics['win_strk'] = int(split(line))
 
         if 'Losing Streak' in line:
-            metrics['lose_strk'] = split(line)
+            metrics['lose_strk'] = int(split(line))
 
         if 'Longs | Shorts' in line:
-            metrics['n_of_longs'], metrics['n_of_shorts'] = split_n_of_longs_shorts(
-                line)
+            metrics['n_of_longs'], metrics['n_of_shorts'] = split_n_of_longs_shorts(line)
 
         if 'Largest Winning Trade' in line:
-            metrics['largest_win'] = round(float(split(line)))
+            metrics['largest_win'] = round(float(split(line)), 2)
 
         if 'Largest Losing Trade' in line:
-            metrics['largest_lose'] = round(float(split(line)))
+            metrics['largest_lose'] = round(float(split(line)), 2)
 
         if 'Total Winning Trades' in line:
-            metrics['n_of_wins'] = split(line)
+            metrics['n_of_wins'] = int(split(line))
 
         if 'Total Losing Trades' in line:
-            metrics['n_of_loses'] = split(line)
+            metrics['n_of_loses'] = int(split(line))
 
         if 'Market Change' in line:
-            metrics['market_change'] = split(line)
+            metrics['market_change'] = round(float(split(line)), 2)
     return metrics
 
 
