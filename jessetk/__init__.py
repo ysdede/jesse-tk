@@ -1,4 +1,3 @@
-import copy
 import os
 import sys
 from copy import deepcopy
@@ -130,8 +129,12 @@ def pick(dna_log_file, sort_criteria, len1, len2) -> None:
 @click.argument('dna_file', required=True, type=str)
 @click.argument('start_date', required=True, type=str)
 @click.argument('finish_date', required=True, type=str)
-@click.argument('eliminate', required=False, type=bool)
-def refine(dna_file, start_date: str, finish_date: str, eliminate: bool) -> None:
+@click.option('--eliminate/--no-eliminate', default=False,
+              help='Remove worst performing dnas at every iteration.')
+@click.option(
+    '--cpu', default=0, show_default=True,
+    help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
+def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: int) -> None:
     """
     backtest all candidate dnas. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
@@ -143,33 +146,18 @@ def refine(dna_file, start_date: str, finish_date: str, eliminate: bool) -> None
     if not eliminate:
         eliminate = False
 
-    from jessetk.refine import refine
-    r = refine(dna_file, start_date, finish_date, eliminate)
-    r.run(dna_file, start_date, finish_date)
+    if cpu > cpu_count():
+        raise ValueError(
+        f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
+    elif cpu == 0:
+        max_cpu = cpu_count()
+    else:
+        max_cpu = cpu
+    print('CPU:', max_cpu)
 
-
-@cli.command()
-@click.argument('dna_file', required=True, type=str)
-@click.argument('start_date', required=True, type=str)
-@click.argument('finish_date', required=True, type=str)
-@click.argument('eliminate', required=False, type=bool)
-def refineth(dna_file, start_date: str, finish_date: str, eliminate: bool) -> None:
-    """
-    backtest all candidate dnas. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
-    """
-    os.chdir(os.getcwd())
-    validate_cwd()
-    validateconfig()
-    makedirs()
-
-    if not eliminate:
-        eliminate = False
-
-    from jessetk.refine import refine
-    r = refine(dna_file, start_date, finish_date, eliminate)
-    r.run(dna_file, start_date, finish_date)
-
-# *******************
+    from jessetk.RefineTh import Refine
+    r = Refine(dna_file, start_date, finish_date, eliminate, max_cpu)
+    r.run()
 
 
 @cli.command()
@@ -197,6 +185,16 @@ def randomrefine(dna_file: str, start_date: str, finish_date: str, iterations: i
 
     from jessetk.Vars import datadir
     os.makedirs(f'./{datadir}/results', exist_ok=True)
+
+    if cpu > cpu_count():
+        raise ValueError(
+        f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
+    elif cpu == 0:
+        max_cpu = cpu_count()
+    else:
+        max_cpu = cpu
+
+    print('Cpu count:', cpu_count(), 'Used:', max_cpu)
 
     if not eliminate:
         eliminate = False
@@ -475,22 +473,32 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     
     config['app']['trading_mode'] = 'backtest'
     # register_custom_exception_handler()
-
     # debug flag
     config['app']['debug_mode'] = debug
-    print('Current DNA:', router.routes[0].dna)
-    sleep(3)
 
-    if dna != 'None':
-        router.routes[0].dna = utils.decode_base32(dna)
-        print('New DNA:', router.routes[0].dna)
-        sleep(3)
-
-    # fee flag
+        # fee flag
     if not fee:
         for e in config['app']['trading_exchanges']:
             config['env']['exchanges'][e]['fee'] = 0
             get_exchange(e).fee = 0
+
+    print(sys.argv)
+    
+    print('DNA to decode: ', dna)
+    sleep(3)
+
+    if dna != 'None':
+        print('DNA to decode:', dna)
+        
+        try:
+            dna_encoded = utils.decode_base32(dna)
+        except:
+            print(dna)
+            exit()
+        router.routes[0].dna = dna_encoded
+        print('New DNA:', router.routes[0].dna)
+
+
 
     # print(router.routes[0].__dict__)
 
@@ -532,3 +540,26 @@ def validateconfig():  # TODO Modify config without user interaction!
             get_config('env.metrics.total_losing_trades', False)):
         print('Set optional metrics to True in config.py!')
         exit()
+
+
+
+# @cli.command()
+# @click.argument('dna_file', required=True, type=str)
+# @click.argument('start_date', required=True, type=str)
+# @click.argument('finish_date', required=True, type=str)
+# @click.argument('eliminate', required=False, type=bool)
+# def refine(dna_file, start_date: str, finish_date: str, eliminate: bool) -> None:
+#     """
+#     backtest all candidate dnas. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
+#     """
+#     os.chdir(os.getcwd())
+#     validate_cwd()
+#     validateconfig()
+#     makedirs()
+
+#     if not eliminate:
+#         eliminate = False
+
+#     from jessetk.refine import refine
+#     r = refine(dna_file, start_date, finish_date, eliminate)
+#     r.run(dna_file, start_date, finish_date)
