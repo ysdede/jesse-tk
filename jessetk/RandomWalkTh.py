@@ -138,7 +138,7 @@ class RandomWalk:
                 metric = {}
                 utils.print_random_header()
                 print('\x1b[6;30;42m' + random_console_formatter.format(*mean) + '\x1b[0m')
-                utils.print_random_tops(sorted_results, 10)
+                utils.print_random_tops(sorted_results, 25)
 
 
         utils.create_csv_report(
