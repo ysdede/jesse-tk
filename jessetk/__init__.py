@@ -197,6 +197,66 @@ def random(start_date: str, finish_date: str, iterations: int, width: int, cpu: 
 
 
 @cli.command()
+@click.argument('start_date', required=False, type=str)
+def import_routes(start_date: str) -> None:
+    """
+    Import-candles for pairs listed in routes.py
+    Enter start date "YYYY-MM-DD"
+    If no start date is specified, the system will default to two days earlier.
+    It's useful for executing script in a cron job to download deltas on a regular basis.
+    """
+    from dateutil.parser import isoparse
+    import datetime
+
+    try:
+        isoparse(start_date)
+        sd = start_date
+    except:
+        sd = str(datetime.date.today() - datetime.timedelta(days=2))
+        print('Falling-back to two days earlier. Given parameter:', start_date)
+    
+    # os.chdir(os.getcwd())
+    # validate_cwd()
+    # validateconfig()
+
+    try:
+        from jesse.config import config
+        from jesse.modes import import_candles_mode
+        from jesse.routes import router
+        from jesse.services import db
+        config['app']['trading_mode'] = 'import-candles'
+    except Exception as e:
+        print(e)
+        print('Check your routes.py file or database settings in config.py')
+        exit()
+    
+    
+    print(f'Startdate: {sd}')
+
+    routes_list = router.routes
+
+    if not routes_list or len(routes_list) < 1:
+        print('Check your routes.py file!')
+        exit()
+
+    for i, t in enumerate(routes_list):
+        pair = t.symbol
+        exchange = t.exchange
+        print(f'Importing {exchange} {pair}')
+
+        try:
+            import_candles_mode.run(exchange, pair, sd, skip_confirmation=True)
+        except KeyboardInterrupt:
+            print('Terminated!')
+            db.close_connection()
+            sys.exit()
+        except:
+            print(f'Import error, skipping {exchange} {pair}')
+
+    db.close_connection()
+
+
+@cli.command()
 @click.argument('dna_file', required=True, type=str)
 @click.argument('start_date', required=True, type=str)
 @click.argument('finish_date', required=True, type=str)
