@@ -147,7 +147,7 @@ def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: in
 
     if cpu > cpu_count():
         raise ValueError(
-        f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
+            f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
     elif cpu == 0:
         max_cpu = cpu_count()
     else:
@@ -157,6 +157,103 @@ def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: in
     from jessetk.RefineTh import Refine
     r = Refine(dna_file, start_date, finish_date, eliminate, max_cpu)
     r.run()
+
+
+@cli.command()
+@click.argument('start_date', required=True, type=str)
+@click.argument('finish_date', required=True, type=str)
+@click.argument('iterations', required=False, type=int)
+@click.argument('width', required=False, type=int)
+@click.option(
+    '--cpu', default=0, show_default=True,
+    help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
+def random(start_date: str, finish_date: str, iterations: int, width: int, cpu: int) -> None:
+    """
+                                random walk backtest w/ threading.
+                                Enter period "YYYY-MM-DD" "YYYY-MM-DD
+                                Number of tests to perform  eg. 40
+                                Sample width in days        eg. 30"
+                                Thread counts to use        eg. 4
+    """
+
+    os.chdir(os.getcwd())
+    validate_cwd()
+    validateconfig()
+    makedirs()
+
+    if not iterations or iterations < 0:
+        iterations = 32
+        print(f'Iterations not provided, falling back to {iterations} iters!')
+    if not width:
+        width = 60
+        print(
+            f'Window width not provided, falling back to {width} days window!')
+
+    max_cpu = utils.cpu_info(cpu)
+
+    from jessetk.RandomWalkTh import RandomWalk
+    rwth = RandomWalk(start_date, finish_date, iterations, width, max_cpu)
+    rwth.run()
+
+
+@cli.command()
+@click.argument('start_date', required=False, type=str)
+def import_routes(start_date: str) -> None:
+    """
+    Import-candles for pairs listed in routes.py
+    Enter start date "YYYY-MM-DD"
+    If no start date is specified, the system will default to two days earlier.
+    It's useful for executing script in a cron job to download deltas on a regular basis.
+    """
+    from dateutil.parser import isoparse
+    import datetime
+
+    try:
+        isoparse(start_date)
+        sd = start_date
+    except:
+        sd = str(datetime.date.today() - datetime.timedelta(days=2))
+        print('Falling-back to two days earlier. Given parameter:', start_date)
+    
+    # os.chdir(os.getcwd())
+    # validate_cwd()
+    # validateconfig()
+
+    try:
+        from jesse.config import config
+        from jesse.modes import import_candles_mode
+        from jesse.routes import router
+        from jesse.services import db
+        config['app']['trading_mode'] = 'import-candles'
+    except Exception as e:
+        print(e)
+        print('Check your routes.py file or database settings in config.py')
+        exit()
+    
+    
+    print(f'Startdate: {sd}')
+
+    routes_list = router.routes
+
+    if not routes_list or len(routes_list) < 1:
+        print('Check your routes.py file!')
+        exit()
+
+    for i, t in enumerate(routes_list):
+        pair = t.symbol
+        exchange = t.exchange
+        print(f'Importing {exchange} {pair}')
+
+        try:
+            import_candles_mode.run(exchange, pair, sd, skip_confirmation=True)
+        except KeyboardInterrupt:
+            print('Terminated!')
+            db.close_connection()
+            sys.exit()
+        except:
+            print(f'Import error, skipping {exchange} {pair}')
+
+    db.close_connection()
 
 
 @cli.command()
@@ -187,7 +284,7 @@ def randomrefine(dna_file: str, start_date: str, finish_date: str, iterations: i
 
     if cpu > cpu_count():
         raise ValueError(
-        f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
+            f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
     elif cpu == 0:
         max_cpu = cpu_count()
     else:
@@ -279,60 +376,6 @@ def randomrefine(dna_file: str, start_date: str, finish_date: str, iterations: i
 
     utils.create_csv_report(rrefine.sorted_results,
                             rrefine.report_file_name, refine_file_header)
-
-
-# *******************
-
-@cli.command()
-@click.argument('start_date', required=True, type=str)
-@click.argument('finish_date', required=True, type=str)
-@click.argument('iterations', required=False, type=int)
-@click.argument('width', required=False, type=int)
-@click.option(
-    '--cpu', default=0, show_default=True,
-    help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
-def random(start_date: str, finish_date: str, iterations: int, width: int, cpu: int) -> None:
-    """
-                                random walk backtest w/ threading.
-                                Enter period "YYYY-MM-DD" "YYYY-MM-DD
-                                Number of tests to perform  eg. 40
-                                Sample width in days        eg. 30"
-                                Thread counts to use        eg. 4
-    """
-
-    os.chdir(os.getcwd())
-    validate_cwd()
-    validateconfig()
-    makedirs()
-
-    if not iterations or iterations < 0:
-        iterations = 32
-        print(f'Iterations not provided, falling back to {iterations} iters!')
-    if not width:
-        width = 60
-        print(
-            f'Window width not provided, falling back to {width} days window!')
-
-    iters = iterations
-    processes = []
-    commands = []
-    results = []
-    sorted_results = []
-    iters_completed = 0
-
-    if cpu > cpu_count():
-        raise ValueError(
-            f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
-    elif cpu == 0:
-        max_cpu = cpu_count()
-    else:
-        max_cpu = cpu
-
-    print('Cpu count:', cpu_count(), 'Used:', max_cpu)
-
-    from jessetk.RandomWalkTh import RandomWalk
-    rwth = RandomWalk(start_date, finish_date, iterations, width, max_cpu)
-    rwth.run()
 
 
 @cli.command()
@@ -463,26 +506,26 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     backtest mode. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
     validate_cwd()
-    
+
     config['app']['trading_mode'] = 'backtest'
     # register_custom_exception_handler()
     # debug flag
     config['app']['debug_mode'] = debug
 
-        # fee flag
+    # fee flag
     if not fee:
         for e in config['app']['trading_exchanges']:
             config['env']['exchanges'][e]['fee'] = 0
             get_exchange(e).fee = 0
 
     print(sys.argv)
-    
+
     print('DNA to decode: ', dna)
     sleep(3)
 
     if dna != 'None':
         print('DNA to decode:', dna)
-        
+
         try:
             dna_encoded = utils.decode_base32(dna)
         except:
@@ -490,8 +533,6 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
             exit()
         router.routes[0].dna = dna_encoded
         print('New DNA:', router.routes[0].dna)
-
-
 
     # print(router.routes[0].__dict__)
 
@@ -533,7 +574,6 @@ def validateconfig():  # TODO Modify config without user interaction!
             get_config('env.metrics.total_losing_trades', False)):
         print('Set optional metrics to True in config.py!')
         exit()
-
 
 
 # @cli.command()

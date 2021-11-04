@@ -1,10 +1,21 @@
 import base64
+from multiprocessing import cpu_count
 import os
 from subprocess import PIPE, Popen
 
 import jessetk.Vars
 from jessetk.Vars import random_console_formatter, random_console_header1, random_console_header2
 
+def cpu_info(cpu):
+    if cpu > cpu_count():
+        raise ValueError(
+            f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
+    elif cpu == 0:
+        max_cpu = cpu_count()
+    else:
+        max_cpu = cpu
+    print('Cpu count:', cpu_count(), 'In use:', max_cpu)
+    return max_cpu
 
 def encode_base32(s):
     s_bytes = s.encode('ascii')
