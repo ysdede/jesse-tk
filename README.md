@@ -1,6 +1,6 @@
 # Jesse Toolkit
 
-.
+see old tool [jesse-picker](https://github.com/ysdede/jesse-picker) for details.
 
 
 
