@@ -1,21 +1,19 @@
-from datetime import datetime
-import click
-from dateutil.parser import parser
-import jesse.helpers as jh
 import os
 import sys
 from copy import deepcopy
+from multiprocessing import cpu_count
+from pydoc import locate
+from time import gmtime, sleep, strftime
+from timeit import default_timer as timer
+
+import click
+import jesse.helpers as jh
 from jesse.config import config
 from jesse.helpers import get_config
 from jesse.modes import backtest_mode
 from jesse.routes import router
-from jesse.services import db, report
+from jesse.services import db
 from jesse.services.selectors import get_exchange
-from multiprocessing import cpu_count
-from pydoc import locate
-from subprocess import PIPE, Popen
-from time import gmtime, sleep, strftime
-from timeit import default_timer as timer
 
 from jessetk import Vars, randomwalk, utils
 from jessetk.Vars import (initial_test_message, random_console_formatter,
@@ -216,7 +214,7 @@ def import_routes(start_date: str) -> None:
     except:
         sd = str(datetime.date.today() - datetime.timedelta(days=2))
         print('Falling-back to two days earlier. Given parameter:', start_date)
-    
+
     # os.chdir(os.getcwd())
     # validate_cwd()
     # validateconfig()
@@ -231,8 +229,7 @@ def import_routes(start_date: str) -> None:
         print(e)
         print('Check your routes.py file or database settings in config.py')
         exit()
-    
-    
+
     print(f'Startdate: {sd}')
 
     routes_list = router.routes
@@ -272,9 +269,11 @@ def randomrefine(dna_file: str, start_date: str, finish_date: str, iterations: i
                                 random walk backtest w/ threading.
                                 Enter period "YYYY-MM-DD" "YYYY-MM-DD
                                 Number of tests to perform  eg. 40
-                                Sample width in days        eg. 30"
+                                Sample width in days        eg. 30
                                 Thread counts to use        eg. 4
     """
+    print('Not implemented yet!')
+    exit()
 
     os.chdir(os.getcwd())
     validate_cwd()
@@ -294,9 +293,9 @@ def randomrefine(dna_file: str, start_date: str, finish_date: str, iterations: i
 
     print('Cpu count:', cpu_count(), 'Used:', max_cpu)
 
-    if not eliminate:
-        eliminate = False
-
+    # if not eliminate:
+    #     eliminate = False
+    eliminate = False
     from jessetk.refine import refine
     r = refine(dna_file, start_date, finish_date, eliminate)
     r.run(dna_file, start_date, finish_date)
@@ -361,7 +360,7 @@ def randomrefine(dna_file: str, start_date: str, finish_date: str, iterations: i
 
         clear_console()
 
-        eta = ((timer() - start) / index) * (self.n_of_dnas - index)
+        eta = ((timer() - start) / index) * (rrefine.n_of_dnas - index)
         eta_formatted = strftime("%H:%M:%S", gmtime(eta))
         print(
             f'{index}/{rrefine.n_of_dnas}\teta: {eta_formatted} | {rrefine.pair} '
@@ -431,6 +430,7 @@ def randomsg(dna_file, start_date: str, finish_date: str, iterations: int, width
             print('Target reached, exiting...')
             break
 
+
 @cli.command()
 @click.argument('symbol', required=True, type=str)
 @click.argument('market_type', required=True, type=str)
@@ -441,36 +441,33 @@ def bulk_import(symbol: str, market_type: str, start_date: str) -> None:
     Enter SYMBOL MARKET_TYPE START_DATE
     
     jesse-tk bulk-import BTC-USDT futures 2020-01-01
-    jesse-tk bulk-import BTC-USDT spot 2017-08-01
+    jesse-tk bulk-import BTC-USDT spot 2017-05-01
     """
     import arrow
-    
+    from dateutil import parser
+    from jessetk.BulkImport import Bulk
+
     os.chdir(os.getcwd())
     validate_cwd()
     validateconfig()
-    
-    # start = datetime(2019, 1, 15)
-    print(start_date)
-    print(symbol)
-    
-    from dateutil import parser
+
     try:
         start = parser.parse(start_date)
     except ValueError:
         print(f'Invalid start date: {start_date}')
         exit()
-    
+
     symbol = symbol.upper()
     market_type = market_type.lower()
-    
+
     try:
         sym = symbol.replace('-', '')
     except:
         print(f'Invalid symbol: {symbol}, format: BTC-USDT')
         exit()
-    
+
     end = arrow.utcnow().floor('month')
-    
+
     if market_type == 'spot':
         exchange = 'Binance'
     elif market_type == 'futures':
@@ -479,26 +476,24 @@ def bulk_import(symbol: str, market_type: str, start_date: str) -> None:
     else:
         print('Invalid market type! Enter spot or futures')
         exit()
-        
-    from jessetk.BulkImport import Bulk
+
     b = Bulk(exchange=exchange, symbol=symbol, market_type=market_type)
-    
-    b.tf = '1m'
-    
-    print('start', start, '  -  ', 'end', end)
+
+    b.tf = '1m'  # Use 1m candles for Jesse
 
     b.timer_start = timer()
     months = b.get_months(start, end)
-    
+
     # Get this month's days till yesterday
     post_days = b.get_days(arrow.utcnow().floor('month'), arrow.utcnow().floor('day').shift(days=-1))
+
     # pre_days = b.get_days(arrow.get(start), arrow.get(start).ceil('month'))
 
     months_urls = []
     months_checksum_urls = []
     days_urls = []
     days_checksum_urls = []
-    
+
     b.period = 'monthly'
     months_urls, months_checksum_urls = b.make_urls(months)
     # print('months_urls', months_urls)
@@ -507,7 +502,7 @@ def bulk_import(symbol: str, market_type: str, start_date: str) -> None:
     b.period = 'daily'
     days_urls, days_checksum_urls = b.make_urls(post_days)
     b.run_threading_download_unzip(days_urls)
-        
+
     print('Done in', round(timer() - b.timer_start), 'seconds.')
 
 
@@ -655,7 +650,6 @@ def validateconfig():  # TODO Modify config without user interaction!
             get_config('env.metrics.total_losing_trades', False)):
         print('Set optional metrics to True in config.py!')
         exit()
-
 
 # @cli.command()
 # @click.argument('dna_file', required=True, type=str)
