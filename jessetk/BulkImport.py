@@ -137,10 +137,6 @@ class Bulk:
         # Run multiple threads. Each call will take the next element in urls list
         results = ThreadPool(8).imap_unordered(self.download_extract, urls)
 
-        for r in results:  # TODO get rid of this loop
-            if r:
-                pass
-
     def extract_ohlc(self, fn):
 
         with open(fn, newline='') as csvfile:
