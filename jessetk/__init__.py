@@ -489,11 +489,6 @@ def bulk_import(symbol: str, market_type: str, start_date: str) -> None:
 
     # pre_days = b.get_days(arrow.get(start), arrow.get(start).ceil('month'))
 
-    months_urls = []
-    months_checksum_urls = []
-    days_urls = []
-    days_checksum_urls = []
-
     b.period = 'monthly'
     months_urls, months_checksum_urls = b.make_urls(months)
     # print('months_urls', months_urls)
@@ -503,7 +498,7 @@ def bulk_import(symbol: str, market_type: str, start_date: str) -> None:
     days_urls, days_checksum_urls = b.make_urls(post_days)
     b.run_threading_download_unzip(days_urls)
 
-    print('Done in', round(timer() - b.timer_start), 'seconds.')
+    print('Completed in', round(timer() - b.timer_start), 'seconds.')
 
 
 @cli.command()
@@ -521,9 +516,6 @@ def refinepairs(dna_file, start_date: str, finish_date: str) -> None:
     validateconfig()
     makedirs()
     run(dna_file, _start_date=start_date, _finish_date=finish_date)
-
-
-# // *
 
 @cli.command()
 def score() -> None:
