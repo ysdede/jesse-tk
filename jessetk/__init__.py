@@ -445,7 +445,7 @@ def bulk_import(symbol: str, market_type: str, start_date: str) -> None:
     """
     import arrow
     from dateutil import parser
-    from jessetk.BulkImport import Bulk
+    from jessetk.BulkImport import Bulk, get_days, get_months
 
     os.chdir(os.getcwd())
     validate_cwd()
@@ -482,10 +482,10 @@ def bulk_import(symbol: str, market_type: str, start_date: str) -> None:
     b.tf = '1m'  # Use 1m candles for Jesse
 
     b.timer_start = timer()
-    months = b.get_months(start, end)
+    months = get_months(start, end)
 
     # Get this month's days till yesterday
-    post_days = b.get_days(arrow.utcnow().floor('month'), arrow.utcnow().floor('day').shift(days=-1))
+    post_days = get_days(arrow.utcnow().floor('month'), arrow.utcnow().floor('day').shift(days=-1))
 
     # pre_days = b.get_days(arrow.get(start), arrow.get(start).ceil('month'))
 
