@@ -1,4 +1,6 @@
+from datetime import datetime
 import click
+from dateutil.parser import parser
 import jesse.helpers as jh
 import os
 import sys
@@ -428,6 +430,85 @@ def randomsg(dna_file, start_date: str, finish_date: str, iterations: int, width
         if len(r.sorted_results) <= 5:
             print('Target reached, exiting...')
             break
+
+@cli.command()
+@click.argument('symbol', required=True, type=str)
+@click.argument('market_type', required=True, type=str)
+@click.argument('start_date', required=True, type=str)
+def bulk_import(symbol: str, market_type: str, start_date: str) -> None:
+    """
+    Bulk download Binance candles
+    Enter SYMBOL MARKET_TYPE START_DATE
+    
+    jesse-tk bulk-import BTC-USDT futures 2020-01-01
+    jesse-tk bulk-import BTC-USDT spot 2017-08-01
+    """
+    import arrow
+    
+    os.chdir(os.getcwd())
+    validate_cwd()
+    validateconfig()
+    
+    # start = datetime(2019, 1, 15)
+    print(start_date)
+    print(symbol)
+    
+    from dateutil import parser
+    try:
+        start = parser.parse(start_date)
+    except ValueError:
+        print(f'Invalid start date: {start_date}')
+        exit()
+    
+    symbol = symbol.upper()
+    market_type = market_type.lower()
+    
+    try:
+        sym = symbol.replace('-', '')
+    except:
+        print(f'Invalid symbol: {symbol}, format: BTC-USDT')
+        exit()
+    
+    end = arrow.utcnow().floor('month')
+    
+    if market_type == 'spot':
+        exchange = 'Binance'
+    elif market_type == 'futures':
+        exchange = 'Binance Futures'
+        margin_type = 'um'
+    else:
+        print('Invalid market type! Enter spot or futures')
+        exit()
+        
+    from jessetk.BulkImport import Bulk
+    b = Bulk(exchange=exchange, symbol=symbol, market_type=market_type)
+    
+    b.tf = '1m'
+    
+    print('start', start, '  -  ', 'end', end)
+
+    b.timer_start = timer()
+    months = b.get_months(start, end)
+    
+    # Get this month's days till yesterday
+    post_days = b.get_days(arrow.utcnow().floor('month'), arrow.utcnow().floor('day').shift(days=-1))
+    # pre_days = b.get_days(arrow.get(start), arrow.get(start).ceil('month'))
+
+    months_urls = []
+    months_checksum_urls = []
+    days_urls = []
+    days_checksum_urls = []
+    
+    b.period = 'monthly'
+    months_urls, months_checksum_urls = b.make_urls(months)
+    # print('months_urls', months_urls)
+    b.run_threading_download_unzip(months_urls)
+
+    b.period = 'daily'
+    days_urls, days_checksum_urls = b.make_urls(post_days)
+    b.run_threading_download_unzip(days_urls)
+        
+    print('Done in', round(timer() - b.timer_start), 'seconds.')
 
 
 @cli.command()
