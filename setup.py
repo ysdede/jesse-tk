@@ -1,8 +1,9 @@
-from setuptools import setup
+from setuptools import find_packages, setup
 
 setup(
     name="jesse-tk",
-    version='0.30',
+    version='0.40',
+    packages=find_packages(),
     install_requires=[
         'Click',
     ],
@@ -10,4 +11,6 @@ setup(
         [console_scripts]
         jesse-tk=jessetk.__init__:cli
     ''',
+    python_requires='>=3.7',
+    include_package_data=True,
 )
