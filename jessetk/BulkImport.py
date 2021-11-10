@@ -135,7 +135,7 @@ class Bulk:
 
     def run_threading_download_unzip(self, urls):
         # Run multiple threads. Each call will take the next element in urls list
-        results = ThreadPool(8).imap_unordered(self.download_extract, urls)
+        results = ThreadPool(4).imap_unordered(self.download_extract, urls)
 
         for r in results:  # TODO get rid of this loop
             if r:
