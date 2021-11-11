@@ -6,27 +6,27 @@ from timeit import default_timer as timer
 from urllib.request import urlopen
 from zipfile import ZipFile
 
-import arrow
+from arrow import Arrow
 import jesse.helpers as jh
 from jesse.models import Candle
 from jesse.services.db import store_candles
 
 
-def get_months(start, end):
+def get_months(start, end) -> list:
     months = []
-    for d in arrow.Arrow.range('week', start, end):
-        m = d.strftime("%Y-%m")
-        if m not in months:
-            months.append(m)
+    for m in Arrow.range('week', start, end):
+        m_str = m.strftime("%Y-%m")
+        if m_str not in months:
+            months.append(m_str)
     return months
 
 
 def get_days(start, end) -> list:
     days = []
-    for d in arrow.Arrow.range('day', start, end):
-        day_str = d.strftime("%Y-%m-%d")
-        if day_str not in days:
-            days.append(day_str)
+    for d in Arrow.range('day', start, end):
+        d_str = d.strftime("%Y-%m-%d")
+        if d_str not in days:
+            days.append(d_str)
     return days
 
 
