@@ -435,13 +435,13 @@ def randomsg(dna_file, start_date: str, finish_date: str, iterations: int, width
 @click.argument('symbol', required=True, type=str)
 @click.argument('market_type', required=True, type=str)
 @click.argument('start_date', required=True, type=str)
-def bulk_import(symbol: str, market_type: str, start_date: str) -> None:
+def bulk(symbol: str, market_type: str, start_date: str) -> None:
     """
     Bulk download Binance candles
     Enter SYMBOL MARKET_TYPE START_DATE
     
-    jesse-tk bulk-import BTC-USDT futures 2020-01-01
-    jesse-tk bulk-import BTC-USDT spot 2017-05-01
+    jesse-tk bulk btc-usdt futures 2020-01-01
+    jesse-tk bulk eth-usdt spot 2017-05-01
     """
     import arrow
     from dateutil import parser
