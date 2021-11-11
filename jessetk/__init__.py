@@ -481,11 +481,11 @@ def bulkdry(exchange: str, symbol: str, start_date: str, workers: int) -> None:
     end = arrow.utcnow().floor('month').shift(months=-1)
 
     if exchange in {'binance', 'spot'}:
-        exchange = 'binance'
+        exchange = 'Binance'
         market_type = 'spot'
         margin_type = None
     elif exchange in {'binance futures', 'futures'}:
-        exchange = 'binance futures'
+        exchange = 'Binance Futures'
         market_type = 'futures'
         margin_type = 'um'
     else:
@@ -553,11 +553,11 @@ def bulk(exchange: str, symbol: str, start_date: str, workers: int) -> None:
     end = arrow.utcnow().floor('month').shift(months=-1)
 
     if exchange in ['binance', 'spot']:
-        exchange = 'binance'
+        exchange = 'Binance'
         market_type = 'spot'
         margin_type = None
     elif exchange in ['binance futures', 'futures']:
-        exchange = 'binance futures'
+        exchange = 'Binance Futures'
         market_type = 'futures'
         margin_type = 'um'
     else:
