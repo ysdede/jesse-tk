@@ -29,6 +29,8 @@ def get_days(start, end) -> list:
             days.append(d_str)
     return days
 
+def is_exist(file_name):
+    return os.path.exists(file_name) or os.path.isfile(file_name)
 
 class Bulk:
     def __init__(self, exchange: str, symbol: str, market_type: str) -> None:
@@ -60,41 +62,36 @@ class Bulk:
         # os.makedirs(self.zip_folder, exist_ok=True)
         # os.makedirs(self.csv_folder, exist_ok=True)
 
-    def create_file_and_folder_name_from_url(self, url):
+    def path_and_fn_from_url(self, url):
         fn = url.split('/')[-1].replace('.zip', '.csv')
         folder_name = f'{self.base_folder}{self.mt}/{self.period}/{self.data_type}/{self.sym}/{self.tf}/'
         return fn, folder_name
 
-    def download_extract(self, url):
-        fn, folder_name = self.create_file_and_folder_name_from_url(url)
-
+    def main_func_to_rename(self, url):
+        fn, folder_name = self.path_and_fn_from_url(url)
+        r_fn = folder_name + fn
         os.makedirs(folder_name, exist_ok=True)
 
-        # skip download if fn exits in archive folder
-        if os.path.exists(folder_name + fn) or os.path.isfile(folder_name + fn):
-            print('Skipping download', fn, 'already exists.')
-            # return None
-        else:
-            try:
+        # download if file doesn't exist
+        if not is_exist(r_fn):
+            try:        
+                print('Downloading', fn)
                 http_response = urlopen(url)
                 zipfile = ZipFile(BytesIO(http_response.read()))
                 zipfile.extractall(path=folder_name)
-                print('Downloading', fn)
             except Exception as e:
                 print('\033[33m', e, fn, '\033[0m')
                 return None
-
-        r_fn = folder_name + fn
+        else:
+            print('Skipping download', fn, 'already exists.')
+        
         file_size = os.stat(r_fn).st_size
 
-        if file_size <= 0:
-            print(f'{r_fn} failed to download and extract. Size: {file_size} bytes.')
-            return None
-        else:
+        if file_size > 0:
             candles = self.extract_ohlc(r_fn)
             if not candles:
                 print(f'{r_fn} failed to extract.')
-                exit()
+                return None
 
             if self.tf == '1m':
                 # Get the current csv file's first and last timestamp
@@ -103,7 +100,8 @@ class Bulk:
 
                 # prevent duplicates calls to boost performance
                 count = Candle.select().where(
-                    Candle.timestamp.between(temp_start_timestamp, temp_end_timestamp),
+                    Candle.timestamp.between(
+                        temp_start_timestamp, temp_end_timestamp),
                     Candle.symbol == self.symbol,
                     Candle.exchange == self.exchange
                 ).count()
@@ -127,24 +125,32 @@ class Bulk:
                         print('\033[33m', e, '\033[0m')
                         return None
                 else:
-                    print(f'\033[92mCandles already exits in DB skipping {r_fn}\033[0m')
+                    print(
+                        f'\033[92mCandles already exits in DB skipping {r_fn}\033[0m')
             else:
-                print(f'\033[91mWarning: Jesse stores only 1m candles!, your current timeframe is: {self.tf}.\033[0m')
-
+                print(
+                    f'\033[91mWarning: Jesse stores only 1m candles!, your current timeframe is: {self.tf}.\033[0m')
+        else:
+            print(f'{r_fn} failed to download and extract. Size: {file_size} bytes.')
+            return None
+            
+            # return None
         return folder_name + fn
 
     def run_threading_download_unzip(self, urls):
         # Run multiple threads. Each call will take the next element in urls list
-        results = ThreadPool(4).imap_unordered(self.download_extract, urls)
+        results = ThreadPool(4).imap_unordered(self.main_func_to_rename, urls)
 
         for r in results:  # TODO get rid of this loop
             if r:
-                pass
+                # print OK to console in green
+                print('\033[92m', 'OK', '\033[0m',  r)
 
     def extract_ohlc(self, fn):
 
         with open(fn, newline='') as csvfile:
             data = csv.reader(csvfile, delimiter=',', quotechar="'")
+            
             print(f'DEBUG: self.exchange {self.exchange}, self.symbol {self.symbol}')
 
             return [{
