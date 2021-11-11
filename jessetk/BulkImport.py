@@ -11,6 +11,10 @@ import jesse.helpers as jh
 from jesse.models import Candle
 from jesse.services.db import store_candles
 
+from pathlib import Path
+import platform
+import tempfile
+
 
 def get_months(start, end) -> list:
     months = []
@@ -54,7 +58,11 @@ class Bulk:
         self.base_url = 'https://data.binance.vision/data/spot/'  # Takeover this name
         self.base_url2 = 'https://data.binance.vision/data/'
 
-        self.base_folder = './data/'
+        # not tested on *nix & macos
+        temp_dir = Path("/tmp" if platform.system() == "Darwin" else tempfile.gettempdir())
+        print('\033[1m', '\033[37m', 'temp_dir', temp_dir, '\033[0m')
+        
+        self.base_folder = str(temp_dir) + '/bulkdata/'
         self.zip_folder = f'{self.base_folder}zip/'
         self.csv_folder = f'{self.base_folder}csv/'
 
