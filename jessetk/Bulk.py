@@ -18,7 +18,7 @@ class Bulk:
                  tf: str = '1m',
                  market_type: str = 'futures',
                  margin_type: str = 'um',
-                 data_type: str = 'klines', worker_count: int = 8) -> None:
+                 data_type: str = 'klines', worker_count: int = 4) -> None:
         self.timer_start = timer()
         self.start = start
         self.end = end
@@ -107,12 +107,12 @@ class Bulk:
         urls = []
         checksum_urls = []
 
-        # TODO 
+        # TODO
         if self.margin_type and self.market_type != 'spot':
             self.mt = self.market_type + '/' + self.margin_type
         else:
             self.mt = self.market_type
-        
+
         for m in date_list:
             urls.append(
                 f'{self.base_url}{self.mt}/{self.period}/{self.data_type}/{self.sym}/{self.tf}/{self.sym}-{self.tf}-{m}.zip')
