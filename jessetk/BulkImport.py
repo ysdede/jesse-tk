@@ -55,8 +55,7 @@ class Bulk:
         self.period = 'monthly'  # monthly, daily
 
         self.timer_start = None
-        self.base_url = 'https://data.binance.vision/data/spot/'  # Takeover this name
-        self.base_url2 = 'https://data.binance.vision/data/'
+        self.base_url = 'https://data.binance.vision/data/'
 
         # not tested on *nix & macos
         temp_dir = Path("/tmp" if platform.system() == "Darwin" else tempfile.gettempdir())
@@ -184,6 +183,6 @@ class Bulk:
 
         for m in date_list:
             urls.append(
-                f'{self.base_url2}{self.mt}/{self.period}/{self.data_type}/{self.sym}/{self.tf}/{self.sym}-{self.tf}-{m}.zip')
+                f'{self.base_url}{self.mt}/{self.period}/{self.data_type}/{self.sym}/{self.tf}/{self.sym}-{self.tf}-{m}.zip')
             checksum_urls.append(urls[-1] + '.CHECKSUM')
         return urls, checksum_urls
