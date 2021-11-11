@@ -445,13 +445,13 @@ def bulkdry(exchange: str, symbol: str, start_date: str, workers: int) -> None:
 
     Enter EXCHANGE SYMBOL START_DATE { Optional: --workers n}
 
-    jesse-tk bulkjesse Binance btc-usdt 2020-01-01
-    jesse-tk bulkjesse 'Binance Futures' btc-usdt 2020-01-01
+    jesse-tk bulkdry Binance btc-usdt 2020-01-01
+    jesse-tk bulkdry 'Binance Futures' btc-usdt 2020-01-01
 
     You can use spot or futures keywords instead of full exchange name.
 
-    jesse-tk bulkjesse spot btc-usdt 2020-01-01
-    jesse-tk bulkjesse futures eth-usdt 2017-05-01 --workers 16
+    jesse-tk bulkdry spot btc-usdt 2020-01-01
+    jesse-tk bulkdry futures eth-usdt 2017-05-01 --workers 16
     """
 
     import arrow
