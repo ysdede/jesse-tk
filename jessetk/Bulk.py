@@ -26,7 +26,9 @@ class Bulk:
         self.symbol = symbol  # Pair to download
         self.sym = self.symbol.replace('-', '')
         self.market_type = market_type  # spot, futures
-        # Spot: klines, Futures: klines, premiumIndexKlines, markPriceKlines, indexPriceKlines
+        
+        # data_type -> Spot: aggTrades, klines, trades
+        # Futures: aggTrades, indexPriceKlines, klines, markPriceKlines,  premiumIndexKlines, trades
         self.data_type = data_type
         # Futures only, um, cm (usdt margin, coin margin)
         self.margin_type = margin_type
@@ -112,11 +114,18 @@ class Bulk:
             self.mt = self.market_type + '/' + self.margin_type
         else:
             self.mt = self.market_type
-
+        # https://data.binance.vision/data/futures/um/daily/trades/ADAUSDT/ADAUSDT-trades-2021-11-11.zip
+        # https://data.binance.vision/data/futures/um/daily/klines/ADAUSDT/1m/ADAUSDT-1m-2021-11-10.zip
         for m in date_list:
-            urls.append(
-                f'{self.base_url}{self.mt}/{self.period}/{self.data_type}/{self.sym}/{self.tf}/{self.sym}-{self.tf}-{m}.zip')
+            if self.data_type in {'aggTrades', 'trades'}:
+                urls.append(
+                    f'{self.base_url}{self.mt}/{self.period}/{self.data_type}/{self.sym}/{self.sym}-{self.data_type}-{m}.zip')
+            else:
+                urls.append(
+                    f'{self.base_url}{self.mt}/{self.period}/{self.data_type}/{self.sym}/{self.tf}/{self.sym}-{self.tf}-{m}.zip')
+            
             checksum_urls.append(urls[-1] + '.CHECKSUM')
+        # print(urls)
         return urls, checksum_urls
 
 

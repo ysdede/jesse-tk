@@ -435,10 +435,11 @@ def randomsg(dna_file, start_date: str, finish_date: str, iterations: int, width
 @click.argument('exchange', required=True, type=str)
 @click.argument('symbol', required=True, type=str)
 @click.argument('start_date', required=True, type=str)
+@click.argument('data_type', required=False, default='klines',type=str)
 @click.option(
-    '--workers', default=8, show_default=True,
+    '--workers', default=4, show_default=True,
     help='The number of workers to run simultaneously. You can use cpu thread count or x2 or more.')
-def bulkdry(exchange: str, symbol: str, start_date: str, workers: int) -> None:
+def bulkdry(exchange: str, symbol: str, start_date: str, data_type: str, workers: int) -> None:
     """
     DRY RUN
     Bulk download Binance candles as csv files. It does not save them to db.
@@ -483,10 +484,18 @@ def bulkdry(exchange: str, symbol: str, start_date: str, workers: int) -> None:
     if exchange in {'binance', 'spot'}:
         exchange = 'Binance'
         market_type = 'spot'
+        if data_type not in {'aggTrades', 'klines', 'trades'}:
+            print(f'Invalid data type: {data_type}')
+            print('Valid data types: aggTrades, klines, trades')
+            exit()
         margin_type = None
     elif exchange in {'binance futures', 'futures'}:
         exchange = 'Binance Futures'
         market_type = 'futures'
+        if data_type not in {'aggTrades', 'indexPriceKlines', 'klines', 'markPriceKlines',  'premiumIndexKlines', 'trades'}:
+            print(f'Invalid data type: {data_type}')
+            print('Valid data types: aggTrades, indexPriceKlines, klines, markPriceKlines, premiumIndexKlines, trades')
+            exit()
         margin_type = 'um'
     else:
         print('Invalid market type! Enter: binance, binance futures, spot or futures')
@@ -497,7 +506,7 @@ def bulkdry(exchange: str, symbol: str, start_date: str, workers: int) -> None:
     print(f'\x1b[36mEnd: {end}\x1b[0m')
 
     b = Bulk(start=start, end=end, exchange=exchange, symbol=symbol,
-             market_type=market_type, tf='1m', worker_count=workers)
+             market_type=market_type,margin_type=margin_type,data_type=data_type, tf='1m', worker_count=workers)
 
     b.run()
 
