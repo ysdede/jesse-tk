@@ -432,20 +432,32 @@ def randomsg(dna_file, start_date: str, finish_date: str, iterations: int, width
 
 
 @cli.command()
+@click.argument('exchange', required=True, type=str)
 @click.argument('symbol', required=True, type=str)
-@click.argument('market_type', required=True, type=str)
 @click.argument('start_date', required=True, type=str)
-def bulk_import(symbol: str, market_type: str, start_date: str) -> None:
+@click.argument('data_type', required=False, default='klines',type=str)
+@click.option(
+    '--workers', default=4, show_default=True,
+    help='The number of workers to run simultaneously. You can use cpu thread count or x2 or more.')
+def bulkdry(exchange: str, symbol: str, start_date: str, data_type: str, workers: int) -> None:
     """
-    Bulk download Binance candles
-    Enter SYMBOL MARKET_TYPE START_DATE
-    
-    jesse-tk bulk-import BTC-USDT futures 2020-01-01
-    jesse-tk bulk-import BTC-USDT spot 2017-05-01
+    DRY RUN
+    Bulk download Binance candles as csv files. It does not save them to db.
+
+    Enter EXCHANGE SYMBOL START_DATE { Optional: --workers n}
+
+    jesse-tk bulkdry Binance btc-usdt 2020-01-01
+    jesse-tk bulkdry 'Binance Futures' btc-usdt 2020-01-01
+
+    You can use spot or futures keywords instead of full exchange name.
+
+    jesse-tk bulkdry spot btc-usdt 2020-01-01
+    jesse-tk bulkdry futures eth-usdt 2017-05-01 --workers 16
     """
+
     import arrow
     from dateutil import parser
-    from jessetk.BulkImport import Bulk, get_days, get_months
+    from jessetk.Bulk import Bulk, get_days, get_months
 
     os.chdir(os.getcwd())
     validate_cwd()
@@ -458,7 +470,8 @@ def bulk_import(symbol: str, market_type: str, start_date: str) -> None:
         exit()
 
     symbol = symbol.upper()
-    market_type = market_type.lower()
+
+    workers = max(workers, 2)
 
     try:
         sym = symbol.replace('-', '')
@@ -466,39 +479,109 @@ def bulk_import(symbol: str, market_type: str, start_date: str) -> None:
         print(f'Invalid symbol: {symbol}, format: BTC-USDT')
         exit()
 
-    end = arrow.utcnow().floor('month')
+    end = arrow.utcnow().floor('month').shift(months=-1)
 
-    if market_type == 'spot':
+    if exchange in {'binance', 'spot'}:
         exchange = 'Binance'
-    elif market_type == 'futures':
+        market_type = 'spot'
+        if data_type not in {'aggTrades', 'klines', 'trades'}:
+            print(f'Invalid data type: {data_type}')
+            print('Valid data types: aggTrades, klines, trades')
+            exit()
+        margin_type = None
+    elif exchange in {'binance futures', 'futures'}:
         exchange = 'Binance Futures'
+        market_type = 'futures'
+        if data_type not in {'aggTrades', 'indexPriceKlines', 'klines', 'markPriceKlines',  'premiumIndexKlines', 'trades'}:
+            print(f'Invalid data type: {data_type}')
+            print('Valid data types: aggTrades, indexPriceKlines, klines, markPriceKlines, premiumIndexKlines, trades')
+            exit()
         margin_type = 'um'
     else:
-        print('Invalid market type! Enter spot or futures')
+        print('Invalid market type! Enter: binance, binance futures, spot or futures')
         exit()
 
-    b = Bulk(exchange=exchange, symbol=symbol, market_type=market_type)
+    # print start and end variables in color
+    print(f'\x1b[36mStart: {start}\x1b[0m')
+    print(f'\x1b[36mEnd: {end}\x1b[0m')
 
-    b.tf = '1m'  # Use 1m candles for Jesse
+    b = Bulk(start=start, end=end, exchange=exchange, symbol=symbol,
+             market_type=market_type,margin_type=margin_type,data_type=data_type, tf='1m', worker_count=workers)
 
-    b.timer_start = timer()
-    months = get_months(start, end)
-
-    # Get this month's days till yesterday
-    post_days = get_days(arrow.utcnow().floor('month'), arrow.utcnow().floor('day').shift(days=-1))
-
-    # pre_days = b.get_days(arrow.get(start), arrow.get(start).ceil('month'))
-
-    b.period = 'monthly'
-    months_urls, months_checksum_urls = b.make_urls(months)
-    # print('months_urls', months_urls)
-    b.run_threading_download_unzip(months_urls)
-
-    b.period = 'daily'
-    days_urls, days_checksum_urls = b.make_urls(post_days)
-    b.run_threading_download_unzip(days_urls)
+    b.run()
 
     print('Completed in', round(timer() - b.timer_start), 'seconds.')
+
+
+@cli.command()
+@click.argument('exchange', required=True, type=str)
+@click.argument('symbol', required=True, type=str)
+@click.argument('start_date', required=True, type=str)
+@click.option(
+    '--workers', default=4, show_default=True,
+    help='The number of workers to run simultaneously. You can use cpu thread count or x2.')
+def bulk(exchange: str, symbol: str, start_date: str, workers: int) -> None:
+    """
+    Bulk download Binance candles
+    Enter EXCHANGE SYMBOL START_DATE { Optional: --workers n}
+
+    jesse-tk bulk Binance btc-usdt 2020-01-01
+    jesse-tk bulk 'Binance Futures' btc-usdt 2020-01-01
+
+    You can use spot or futures keywords instead of full exchange name.
+
+    jesse-tk bulk spot btc-usdt 2020-01-01
+    jesse-tk bulk futures eth-usdt 2017-05-01 --workers 8
+    """
+
+    import arrow
+    from dateutil import parser
+    from jessetk.BulkJesse import BulkJesse
+
+    os.chdir(os.getcwd())
+    validate_cwd()
+    validateconfig()
+    exchange = exchange.lower()
+
+    try:
+        start = parser.parse(start_date)
+    except ValueError:
+        print(f'Invalid start date: {start_date}')
+        exit()
+
+    workers = max(workers, 2)
+
+    symbol = symbol.upper()
+
+    try:
+        sym = symbol.replace('-', '')
+    except:
+        print(f'Invalid symbol: {symbol}, format: BTC-USDT')
+        exit()
+
+    end = arrow.utcnow().floor('month').shift(months=-1)
+
+    if exchange in ['binance', 'spot']:
+        exchange = 'Binance'
+        market_type = 'spot'
+        margin_type = None
+    elif exchange in ['binance futures', 'futures']:
+        exchange = 'Binance Futures'
+        market_type = 'futures'
+        margin_type = 'um'
+    else:
+        print('Invalid market type! Enter: binance, binance futures, spot or futures')
+        exit()
+
+    print(f'\x1b[36mStart: {start}  {end}\x1b[0m')
+
+    bb = BulkJesse(start=start, end=end, exchange=exchange,
+                   symbol=symbol, market_type=market_type, tf='1m')
+
+    bb.run()
+
+    print('Completed in', round(timer() - bb.timer_start), 'seconds.')
+# /////
 
 
 @cli.command()
@@ -516,6 +599,7 @@ def refinepairs(dna_file, start_date: str, finish_date: str) -> None:
     validateconfig()
     makedirs()
     run(dna_file, _start_date=start_date, _finish_date=finish_date)
+
 
 @cli.command()
 def score() -> None:
