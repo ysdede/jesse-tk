@@ -13,6 +13,7 @@ from jessetk.Bulk import Bulk, get_days, get_months
 class BulkJesse(Bulk):
 
     def run(self):
+        self.sym = self.symbol.replace('-', '')
         self.tf = '1m'
         self.margin_type = 'um'
         self.data_type = 'klines'

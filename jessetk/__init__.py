@@ -583,6 +583,97 @@ def bulk(exchange: str, symbol: str, start_date: str, workers: int) -> None:
     print('Completed in', round(timer() - bb.timer_start), 'seconds.')
 # /////
 
+@cli.command()
+@click.argument('exchange', required=True, type=str)
+@click.argument('start_date', required=True, type=str)
+@click.option(
+    '--workers', default=2, show_default=True,
+    help='The number of workers to run simultaneously.')
+def bulkpairs(exchange: str, start_date: str, workers: int) -> None:
+    """
+    Bulk download ALL! Binance Futures candles
+    
+    Enter EXCHANGE START_DATE { Optional: --workers n}
+    
+    jesse-tk bulkpairs 'Binance Futures' 2020-01-01
+
+    jesse-tk bulkpairs futures 2017-05-01 --workers 8
+    """
+
+    import arrow
+    from dateutil import parser
+    from jessetk.BulkJesse import BulkJesse
+
+    os.chdir(os.getcwd())
+    validate_cwd()
+    validateconfig()
+    exchange = exchange.lower()
+
+    try:
+        start = parser.parse(start_date)
+    except ValueError:
+        print(f'Invalid start date: {start_date}')
+        exit()
+
+    workers = max(workers, 2)
+
+    end = arrow.utcnow().floor('month').shift(months=-1)
+
+    if exchange in ['binance', 'spot']:
+        exchange = 'Binance'
+        market_type = 'spot'
+        margin_type = None
+    elif exchange in ['binance futures', 'futures']:
+        exchange = 'Binance Futures'
+        market_type = 'futures'
+        margin_type = 'um'
+    else:
+        print('Invalid market type! Enter: binance, binance futures, spot or futures')
+        exit()
+
+    try:
+        import pairs
+        pairs_list = pairs.binance_perp_pairs
+    except ImportError:
+        print('Pairs file not found in project folder, loading default pairs list.')
+        import jessetk.pairs
+        pairs_list = jessetk.pairs.binance_perp_pairs
+    except:
+        print('Can not import pairs!')
+        exit()
+
+    
+    sloMo = False
+    debug = False
+    
+    print(f'\x1b[36mStart: {start}  {end}\x1b[0m')
+
+    bb = BulkJesse(start=start, end=end, exchange=exchange,
+                   symbol='BTC-USDT', market_type=market_type, tf='1m')
+    
+    today = arrow.utcnow().format('YYYY-MM-DD')
+    
+    for pair in pairs_list:
+        print(f'Importing {exchange} {pair} {start_date} -> {today}')
+        # sleep2(5)
+        bb.symbol = pair
+        
+        try:
+            bb.run()
+        except KeyboardInterrupt:
+            print('Terminated!')
+            sys.exit()
+        except Exception as e:
+            print(f'Error: {e}')
+            continue
+            print(f'Import error, skipping {exchange} {pair}')
+            # sleep2(5)
+
+    print('Completed in', round(timer() - bb.timer_start), 'seconds.')
+
+# ***************
+
+# --------------------------------------------------
 
 @cli.command()
 @click.argument('dna_file', required=True, type=str)
@@ -623,6 +714,11 @@ def testpairs(start_date: str, finish_date: str) -> None:
     """
     backtest all candidate pairs. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
+    
+    # print in yellow color not implemented yet
+    print('\x1b[33mNot implemented yet. Use old tool jesse-picker testpairs\x1b[0m')
+    exit()
+    
     os.chdir(os.getcwd())
     validate_cwd()
 
