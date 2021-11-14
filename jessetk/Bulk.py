@@ -24,7 +24,7 @@ class Bulk:
         self.end = end
         self.exchange = exchange
         self.symbol = symbol  # Pair to download
-        self.sym = self.symbol.replace('-', '')
+        self.sym =  None  # self.symbol.replace('-', '')
         self.market_type = market_type  # spot, futures
         
         # data_type -> Spot: aggTrades, klines, trades
@@ -46,6 +46,7 @@ class Bulk:
         os.makedirs(self.base_folder, exist_ok=True)
 
     def run(self):
+        self.sym = self.symbol.replace('-', '')
         # Get list of months since start date
         months = get_months(self.start, self.end)
 
