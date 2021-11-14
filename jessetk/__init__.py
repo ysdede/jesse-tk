@@ -642,22 +642,22 @@ def bulkpairs(exchange: str, start_date: str, workers: int) -> None:
         print('Can not import pairs!')
         exit()
 
-    
+
     sloMo = False
     debug = False
-    
+
     print(f'\x1b[36mStart: {start}  {end}\x1b[0m')
 
     bb = BulkJesse(start=start, end=end, exchange=exchange,
                    symbol='BTC-USDT', market_type=market_type, tf='1m')
-    
+
     today = arrow.utcnow().format('YYYY-MM-DD')
-    
+
     for pair in pairs_list:
         print(f'Importing {exchange} {pair} {start_date} -> {today}')
         # sleep2(5)
         bb.symbol = pair
-        
+
         try:
             bb.run()
         except KeyboardInterrupt:
@@ -666,8 +666,7 @@ def bulkpairs(exchange: str, start_date: str, workers: int) -> None:
         except Exception as e:
             print(f'Error: {e}')
             continue
-            print(f'Import error, skipping {exchange} {pair}')
-            # sleep2(5)
+                    # sleep2(5)
 
     print('Completed in', round(timer() - bb.timer_start), 'seconds.')
 
