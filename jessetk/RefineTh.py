@@ -209,12 +209,12 @@ class Refine:
 
     # v TODO Move to utils
     def print_tops_formatted(self):
-        print('\x1b[5;30;44m', end='')
+        print('\033[1m', end='')
         print(
             Vars.refine_console_formatter.format(*Vars.refine_console_header1))
         print(
             Vars.refine_console_formatter.format(*Vars.refine_console_header2))
-        print('\x1b[0m', end='')
+        print('\033[0m', end='')
 
         for r in self.sorted_results[0:25]:
             print(
