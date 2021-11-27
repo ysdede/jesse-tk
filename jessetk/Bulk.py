@@ -19,25 +19,41 @@ class Bulk:
                  market_type: str = 'futures',
                  margin_type: str = 'um',
                  data_type: str = 'klines', worker_count: int = 4) -> None:
+        
+        """Download kline, premiumIndex, trades data from Binance Vision
+
+        Args:
+            start (str): Start date
+            end (str): End date
+            exchange (str): Exchange name. Binance or Binance Futures
+            symbol (str): Dash seperated pair symbol. eg. BTC-USDT
+            tf (str, optional): Candle timeframe. Defaults to '1m'.
+            market_type (str, optional): Spot or futures. Defaults to 'futures'.
+            margin_type (str, optional): Futures only, um, cm (usdt margin, coin margin). Defaults to 'um'.
+            data_type (str, optional): Spot: aggTrades, klines, trades
+                                        Futures: aggTrades, indexPriceKlines, klines, markPriceKlines,  premiumIndexKlines, trades]. Defaults to 'klines'.
+            worker_count (int, optional): Number of download jobs to run paralel. Defaults to 4.
+        """
+
+        
+        
         self.timer_start = timer()
         self.start = start
         self.end = end
         self.exchange = exchange
-        self.symbol = symbol  # Pair to download
-        self.sym =  None  # self.symbol.replace('-', '')
-        self.market_type = market_type  # spot, futures
+        self.symbol = symbol
+        self.sym =  None
+        self.market_type = market_type
         
-        # data_type -> Spot: aggTrades, klines, trades
-        # Futures: aggTrades, indexPriceKlines, klines, markPriceKlines,  premiumIndexKlines, trades
         self.data_type = data_type
-        # Futures only, um, cm (usdt margin, coin margin)
         self.margin_type = margin_type
         self.worker_count = worker_count
         self.mt = None  # combined market type string for usdt margin and coin margin types
-        # -> futures/um - futures/cm
-        self.tf = tf  # timeframe
+                        # -> futures/um - futures/cm
+        self.tf = tf
         self.period = 'monthly'  # monthly, daily
         self.base_url = 'https://data.binance.vision/data/'
+        
         # not tested on *nix & darwin
         temp_dir = Path("/tmp" if platform.system() ==
                         "Darwin" else tempfile.gettempdir())

@@ -217,7 +217,7 @@ def run(_start_date, _finish_date):
         global routes_template
         routes_template = read_file('routes.py')
         print(routes_template)
-        exit()
+        
 
         pairs_list = None
 

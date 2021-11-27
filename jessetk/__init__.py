@@ -14,9 +14,10 @@ from jesse.modes import backtest_mode
 from jesse.routes import router
 from jesse.services import db
 from jesse.services.selectors import get_exchange
-
+from jesse.services import report
+import json as json_lib
 from jessetk import Vars, randomwalk, utils
-from jessetk.Vars import (initial_test_message, random_console_formatter,
+from jessetk.Vars import (Metrics, initial_test_message, random_console_formatter,
                           random_file_header, refine_file_header)
 from jessetk.utils import clear_console
 
@@ -158,6 +159,41 @@ def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: in
     r = Refine(dna_file, start_date, finish_date, eliminate, max_cpu)
     r.run()
 
+
+@cli.command()
+@click.argument('hp_file', required=True, type=str)
+@click.argument('start_date', required=True, type=str)
+@click.argument('finish_date', required=True, type=str)
+@click.option('--eliminate/--no-eliminate', default=False,
+              help='Remove worst performing dnas at every iteration.')
+@click.option(
+    '--cpu', default=0, show_default=True,
+    help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
+def refine_hp(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: int) -> None:
+    """
+    backtest all candidate Ooptuna parameters.
+    Enter in "YYYY-MM-DD" "YYYY-MM-DD"
+    """
+    os.chdir(os.getcwd())
+    validate_cwd()
+    validateconfig()
+    makedirs()
+
+    if not eliminate:
+        eliminate = False
+
+    if cpu > cpu_count():
+        raise ValueError(
+            f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
+    elif cpu == 0:
+        max_cpu = cpu_count()
+    else:
+        max_cpu = cpu
+    print('CPU:', max_cpu)
+
+    from jessetk.RefineHp import RefineHp
+    r = RefineHp(hp_file, start_date, finish_date, eliminate, max_cpu)
+    r.run()
 
 @cli.command()
 @click.argument('start_date', required=True, type=str)
@@ -623,41 +659,55 @@ def bulkpairs(exchange: str, start_date: str, workers: int) -> None:
         exchange = 'Binance'
         market_type = 'spot'
         margin_type = None
+
+        try:
+            import pairs
+            pairs_list = pairs.binance_spot_pairs
+        except ImportError:
+            print('Pairs file not found in project folder, loading default pairs list.')
+            import jessetk.pairs
+            pairs_list = jessetk.pairs.binance_spot_pairs
+        except:
+            print('Can not import pairs!')
+            exit()
+
     elif exchange in ['binance futures', 'futures']:
         exchange = 'Binance Futures'
         market_type = 'futures'
         margin_type = 'um'
+
+        try:
+            import pairs
+            pairs_list = pairs.binance_perp_pairs
+        except ImportError:
+            print('Pairs file not found in project folder, loading default pairs list.')
+            import jessetk.pairs
+            pairs_list = jessetk.pairs.binance_perp_pairs
+        except:
+            print('Can not import pairs!')
+            exit()
+
     else:
         print('Invalid market type! Enter: binance, binance futures, spot or futures')
         exit()
 
-    try:
-        import pairs
-        pairs_list = pairs.binance_perp_pairs
-    except ImportError:
-        print('Pairs file not found in project folder, loading default pairs list.')
-        import jessetk.pairs
-        pairs_list = jessetk.pairs.binance_perp_pairs
-    except:
-        print('Can not import pairs!')
-        exit()
 
-    
+
     sloMo = False
     debug = False
-    
+
     print(f'\x1b[36mStart: {start}  {end}\x1b[0m')
 
     bb = BulkJesse(start=start, end=end, exchange=exchange,
                    symbol='BTC-USDT', market_type=market_type, tf='1m')
-    
+
     today = arrow.utcnow().format('YYYY-MM-DD')
-    
+
     for pair in pairs_list:
         print(f'Importing {exchange} {pair} {start_date} -> {today}')
         # sleep2(5)
         bb.symbol = pair
-        
+
         try:
             bb.run()
         except KeyboardInterrupt:
@@ -666,9 +716,6 @@ def bulkpairs(exchange: str, start_date: str, workers: int) -> None:
         except Exception as e:
             print(f'Error: {e}')
             continue
-            print(f'Import error, skipping {exchange} {pair}')
-            # sleep2(5)
-
     print('Completed in', round(timer() - bb.timer_start), 'seconds.')
 
 # ***************
@@ -748,13 +795,15 @@ def testpairs(start_date: str, finish_date: str) -> None:
               help="Generates QuantStats' HTML output with metrics reports like Sharpe ratio, Win rate, Volatility, etc., and batch plotting for visualizing performance, drawdowns, rolling statistics, monthly returns, etc.")
 @click.option(
     '--dna', default='None', show_default=True, help='Base32 encoded dna string payload')
+@click.option(
+    '--hp', default='None', show_default=True, help='Hyperparameters payload as dict')
 def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bool, fee: bool, chart: bool,
-             tradingview: bool, full_reports: bool, dna: str) -> None:
+             tradingview: bool, full_reports: bool, dna: str, hp: str) -> None:
     """
     backtest mode. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
     validate_cwd()
-
+    
     config['app']['trading_mode'] = 'backtest'
     # register_custom_exception_handler()
     # debug flag
@@ -766,11 +815,9 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
             config['env']['exchanges'][e]['fee'] = 0
             get_exchange(e).fee = 0
 
-    print(sys.argv)
+    # print(sys.argv)
 
-    print('DNA to decode: ', dna)
-    sleep(3)
-
+    # Inject payload DNA to route
     if dna != 'None':
         print('DNA to decode:', dna)
 
@@ -779,23 +826,52 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
         except:
             print(dna)
             exit()
-        router.routes[0].dna = dna_encoded
-        print('New DNA:', router.routes[0].dna)
-
-    # print(router.routes[0].__dict__)
-
+            
+        for _route in router.routes:
+            _route.dna = dna_encoded
+            # print('New DNA:', _route.dna)
+    
+    # Inject payload HP to route
+    for r in router.routes:
+        # print(r)
+        StrategyClass = jh.get_strategy_class(r.strategy_name)
+        r.strategy = StrategyClass()
+        if hp != 'None':
+            print('Payload: ', hp, 'type:', type(hp))
+            
+            hp_dict = json_lib.loads(hp.replace("'", '"'))
+            
+            # print('Old hp:', r.strategy.hyperparameters())
+            
+            hp_new = {}
+            
+            for p in r.strategy.hyperparameters():
+                # r.strategy.hyperparameters()[p] = hp[p]
+                # hp_new[p['name']] = hp[p]
+                # print(p['name'], p['default'])
+                hp_new[p['name']] = hp_dict[p['name']]
+            
+            # hp_new.update(hp)
+            # print('New hp:', hp_new)
+            r.strategy.hp =  hp_new
+        else:
+            hp_new = None
+   
     # backtest_mode._initialized_strategies()
     backtest_mode.run(start_date, finish_date, chart=chart, tradingview=tradingview, csv=csv,
-                      json=json, full_reports=full_reports)
+                      json=json, full_reports=full_reports, hyperparameters=hp_new)
 
     # try:    # Catch error when there's no trades.
     #     data = report.portfolio_metrics()
     #     print(data)
+    #     print('*' * 50)
+    #     print(type(data))
+    #     print(data[0])
     # except:
     #     print('No Trades, no metrics!')
 
     db.close_connection()
-
+    
 
 def print_initial_msg():
     print(initial_test_message)

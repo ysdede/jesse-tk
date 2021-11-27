@@ -11,13 +11,13 @@ from jessetk.Bulk import Bulk, get_days, get_months
 
 
 class BulkJesse(Bulk):
-
+    
     def run(self):
         self.sym = self.symbol.replace('-', '')
         self.tf = '1m'
         self.margin_type = 'um'
         self.data_type = 'klines'
-
+        self.worker_count = 2
         # Get list of months since start date
         months = get_months(self.start, self.end)
         # Get this month's days except today
@@ -74,8 +74,8 @@ class BulkJesse(Bulk):
         ).count()
 
         # If number of candles (on db) between start_ts and end_ts
-        # equal to current csv file's number of elements mark data as already exists
-        already_exists = count == len_data
+        # greater or equal to current csv file's number of elements mark data as already exists
+        already_exists = count >= len_data
 
         if already_exists:
             print(

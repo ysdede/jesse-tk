@@ -1,10 +1,40 @@
 import base64
-from multiprocessing import cpu_count
 import os
+from multiprocessing import cpu_count
 from subprocess import PIPE, Popen
 
+from jesse.helpers import convert_number
+
 import jessetk.Vars
-from jessetk.Vars import random_console_formatter, random_console_header1, random_console_header2
+from jessetk.Vars import (random_console_formatter, random_console_header1,
+                          random_console_header2)
+
+
+def hp_to_dna(strategy_hp, hps):    # TODO - make it work with floats too
+    """Returns DNA code from HP parameters
+    example input: {'ott_len': 3, 'ott_percent': 420, 'stop_loss': 329, 'risk_reward': 19, 'chop_rsi_len': 27, 'chop_bandwidth': 21}
+    example output: *Og2O+
+
+    Args:
+        strategy_hp (StrategyClass.hyperparameters(None): Hyperparameters defined in StrategyClass
+        hps (Dict): Values to be converted to DNA
+
+    Returns:
+        str: encoded DNA string
+    """
+    return ''.join(
+        chr(
+            int(
+                round(
+                    convert_number(
+                        param['max'], param['min'], 119, 40, hps[dec]
+                    )
+                )
+            )
+        )
+        for dec, param in zip(hps, strategy_hp)
+    )
+
 
 def cpu_info(cpu):
     if cpu > cpu_count():
@@ -16,6 +46,7 @@ def cpu_info(cpu):
         max_cpu = cpu
     print('Cpu count:', cpu_count(), 'In use:', max_cpu)
     return max_cpu
+
 
 def encode_base32(s):
     s_bytes = s.encode('ascii')
@@ -242,7 +273,8 @@ def get_metrics3(console_output) -> dict:
             metrics['lose_strk'] = int(split(line))
 
         if 'Longs | Shorts' in line:
-            metrics['n_of_longs'], metrics['n_of_shorts'] = split_n_of_longs_shorts(line)
+            metrics['n_of_longs'], metrics['n_of_shorts'] = split_n_of_longs_shorts(
+                line)
 
         if 'Largest Winning Trade' in line:
             metrics['largest_win'] = round(float(split(line)), 2)
