@@ -146,6 +146,11 @@ def split(line):
     r = r.replace('(', '')
     return r.replace(',', '')
 
+def split_dna_string(line):
+    ll = line.split(' ')
+    return ll[len(ll) - 1]
+    
+
 
 def split_n_of_longs_shorts(line):
     ll = line.split(' ')
@@ -351,6 +356,9 @@ def get_metrics3(console_output) -> dict:
         if 'Market Change' in line:
             metrics['market_change'] = round(float(split(line)), 2)
             
+        if 'Dna String:' in line:
+            metrics['dna'] = split_dna_string(line)
+        
         if 'Sequential Hps' in line:
             metrics['seq_hps'] = split(line)
             

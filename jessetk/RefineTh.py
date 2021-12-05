@@ -104,6 +104,9 @@ class Refine:
 
                 # Map console output to a dict
                 metric = utils.get_metrics3(output.decode('utf-8'))
+                
+                # metric['dna'] = dna
+                
                 print('Metrics decoded', len(metric))
 
                 if metric not in results:

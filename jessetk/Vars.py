@@ -32,6 +32,7 @@ Metrics = {
     'n_of_loses': 0,
     'market_change': 0.0,
     'seq_hps': 'None',
+    'parameters': 'None',
 }
 
 refine_file_header = ['Pair',
