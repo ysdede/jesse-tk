@@ -313,7 +313,7 @@ def import_routes(start_date: str) -> None:
         print('Check your routes.py file!')
         exit()
 
-    for i, t in enumerate(routes_list):
+    for t in routes_list:
         pair = t.symbol
         exchange = t.exchange
         print(f'Importing {exchange} {pair}')
@@ -845,7 +845,7 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     """
     print('1')
     validate_cwd()
-    
+
     config['app']['trading_mode'] = 'backtest'
     # register_custom_exception_handler()
     # debug flag
@@ -858,10 +858,10 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
             get_exchange(e).fee = 0
     print('2')
     # print(sys.argv)
-    
+
     # for r in router.routes:
     #     hp_new = None
-        
+
     #     StrategyClass = jh.get_strategy_class(r.strategy_name)
     #     r.strategy = StrategyClass()
 
@@ -871,7 +871,7 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     #     r.strategy.timeframe = r.timeframe
 
     hp_new = None
-    
+
     r = router.routes[0]
     StrategyClass = jh.get_strategy_class(r.strategy_name)
     r.strategy = StrategyClass()
@@ -879,7 +879,7 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     r.strategy.exchange = r.exchange
     r.strategy.symbol = r.symbol
     r.strategy.timeframe = r.timeframe
-    
+
     print('3')
     # Convert and inject regular DNA string to route
     if r.dna:  # and dna != 'None' and seq != 'None' and hp != 'None':
@@ -895,63 +895,34 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
         hp_new = jh.dna_to_hp(r.strategy.hyperparameters(), utils.decode_base32(dna))
         print(f'Base32 DNA: {dna} -> {hp_new}')
         sleep(3)
-    
+
     # Convert and inject SEQ encoded payload to route
     if seq != 'None' and hp_new is None:  # and hp_new is None and r.dna is None and dna is None and hp is None:
         seq_encoded = utils.decode_seq(seq)
-        hp_new = {}
-        
-        #Sort hyperparameters
-        for p, val in zip(r.strategy.hyperparameters(), seq_encoded):
-            # r.strategy.hyperparameters()[p] = hp[p]
-            # hp_new[p['name']] = hp[p]
-            # print(p['name'], p['default'])
-            hp_new[p['name']] = int(val)
+        hp_new = {
+            p['name']: int(val)
+            for p, val in zip(r.strategy.hyperparameters(), seq_encoded)
+        }
+
+
         # hp_new.update(hp)
         # print('New hp:', hp_new)
         # r.strategy.hp = hp_new
         print(f'SEQ: {seq} -> {hp_new}')
         sleep(3)
-    
+
     # Convert and inject HP (Json) payload to route
     if hp != 'None' and hp_new is None: # and hp_new is None and r.dna is None and dna is None and seq is None:
         hp_dict = json_lib.loads(hp.replace("'", '"').replace('%', '"'))
-        hp_new = {}
-        
-        for p in r.strategy.hyperparameters():
-            # r.strategy.hyperparameters()[p] = hp[p]
-            # hp_new[p['name']] = hp[p]
-            # print(p['name'], p['default'])
-            hp_new[p['name']] = hp_dict[p['name']]
+        hp_new = {p['name']: hp_dict[p['name']] for p in r.strategy.hyperparameters()}
+
         # hp_new.update(hp)
         # print('New hp:', hp_new)
         print(f'Json HP: {hp} -> {hp_new}')
         sleep(3)
     print('4')
-    # # Is this needed? YES!
-    # if hp_new is not None:
-    #     r.strategy.hp = hp_new
-    
-    # # Inject payload DNA to route ->
-    # if dna != 'None':
-    #     print('DNA to decode:', dna)
-    #     r = router.routes[0]
-    #     StrategyClass = jh.get_strategy_class(r.strategy_name)
-    #     r.strategy = StrategyClass()
-    #     hp_new = jh.dna_to_hp(r.strategy.hyperparameters(), utils.decode_base32(dna))
-    #     print(f'Dna: {dna} -> {hp_new}')
-    #     sleep(3)
-        
-        # try:
-        #     dna_encoded = utils.decode_base32(dna)
-        # except:
-        #     print('Dna decoding error!', dna)
-        #     exit()
-            
-        # for _route in router.routes:
-        #     _route.dna = dna_encoded
     # <-------------------------------
-    
+
     # Inject Seq payload to route ->
     # if seq != 'None':
     #     print('Seq to decode:', seq)
@@ -960,9 +931,9 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     #     for r in router.routes:
     #         StrategyClass = jh.get_strategy_class(r.strategy_name)
     #         r.strategy = StrategyClass()
-            
+
     #         hp_new = {}
-            
+
     #         for p, val in zip(r.strategy.hyperparameters(), seq_encoded):
     #             # r.strategy.hyperparameters()[p] = hp[p]
     #             # hp_new[p['name']] = hp[p]
@@ -982,26 +953,26 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     #     r.strategy = StrategyClass()
     #     if hp != 'None':
     #         print('Payload: ', hp, 'type:', type(hp))
-            
+
     #         hp_dict = json_lib.loads(hp.replace("'", '"').replace('%', '"'))
-            
+
     #         print('Old hp:', r.strategy.hyperparameters())
     #         hp_new = {}
-            
+
     #         for p in r.strategy.hyperparameters():
     #             # r.strategy.hyperparameters()[p] = hp[p]
     #             # hp_new[p['name']] = hp[p]
     #             # print(p['name'], p['default'])
     #             hp_new[p['name']] = hp_dict[p['name']]
-            
+
     #         # hp_new.update(hp)
     #         # print('New hp:', hp_new)
     #         r.strategy.hp = hp_new
-   
+
     # backtest_mode._initialized_strategies()
     backtest_mode.run(start_date, finish_date, chart=chart, tradingview=tradingview, csv=csv,
                       json=json, full_reports=full_reports, hyperparameters=hp_new)
-    
+
     # Fix: Print out SeQ to console to help metrics module to grab it
     if seq != 'None':
         print('Sequential Hps:    |', seq)

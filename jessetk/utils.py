@@ -194,7 +194,7 @@ def print_random_header():
 
 
 def print_random_tops(sr, top_n):
-    for r in sr[0:top_n]:
+    for r in sr[:top_n]:
         print(
             random_console_formatter.format(
                 r['start_date'],

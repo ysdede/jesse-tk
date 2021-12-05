@@ -165,7 +165,7 @@ class RefineHp:
         print(
             Vars.refine_console_formatter.format(*Vars.refine_console_header2))
 
-        for r in self.sorted_results[0:25]:
+        for r in self.sorted_results[:25]:
             print(
                 Vars.refine_console_formatter.format(
                     r['dna'],
