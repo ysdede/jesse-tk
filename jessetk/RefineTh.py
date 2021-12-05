@@ -20,7 +20,7 @@ from jessetk.Vars import refine_file_header
 
 
 class Refine:
-    def __init__(self, dna_py_file, start_date, finish_date, eliminate, cpu):
+    def __init__(self, dna_py_file, start_date, finish_date, eliminate, cpu, full_reports):
 
         import signal
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -30,7 +30,8 @@ class Refine:
         self.finish_date = finish_date
         self.cpu = cpu
         self.eliminate = eliminate
-
+        self.fr = '--full-reports' if full_reports else ''
+        
         self.jessetkdir = datadir
         self.anchor = 'DNA!'
         self.sort_by = {'serenity': 12, 'sharpe': 13, 'calmar': 14}
@@ -82,7 +83,7 @@ class Refine:
                     dna = self.dnas[index][0]
 
                     commands.append(
-                        f"jesse-tk backtest {self.start_date} {self.finish_date} --dna {utils.encode_base32(dna)}")
+                        f"jesse-tk backtest {self.start_date} {self.finish_date} --dna {utils.encode_base32(dna)} {self.fr}")
                     index += 1
                     iters -= 1
                     
