@@ -21,14 +21,14 @@ from jessetk.Vars import (Metrics, initial_test_message, random_console_formatte
                           random_file_header, refine_file_header)
 from jessetk.utils import clear_console
 
-# Python version validation.
-if jh.python_version() < 3.7:
-    print(
-        jh.color(
-            f'Jesse requires Python version above 3.7. Yours is {jh.python_version()}',
-            'red'
-        )
-    )
+# # Python version validation.
+# if jh.python_version() < 3.7:
+#     print(
+#         jh.color(
+#             f'Jesse requires Python version above 3.7. Yours is {jh.python_version()}',
+#             'red'
+#         )
+#     )
 
 # fix directory issue
 sys.path.insert(0, os.getcwd())
@@ -134,7 +134,9 @@ def pick(dna_log_file, sort_criteria, len1, len2) -> None:
 @click.option(
     '--cpu', default=0, show_default=True,
     help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
-def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: int) -> None:
+@click.option('--full-reports/--no-full-reports', default=False,
+              help="Generates QuantStats' HTML output with metrics reports like Sharpe ratio, Win rate, Volatility, etc., and batch plotting for visualizing performance, drawdowns, rolling statistics, monthly returns, etc.")
+def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: int, full_reports) -> None:
     """
     backtest all candidate dnas. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
@@ -156,7 +158,7 @@ def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: in
     print('CPU:', max_cpu)
 
     from jessetk.RefineTh import Refine
-    r = Refine(dna_file, start_date, finish_date, eliminate, max_cpu)
+    r = Refine(dna_file, start_date, finish_date, eliminate, max_cpu, full_reports)
     r.run()
 
 
@@ -169,9 +171,11 @@ def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: in
 @click.option(
     '--cpu', default=0, show_default=True,
     help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
-def refine_hp(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: int) -> None:
+@click.option('--full-reports/--no-full-reports', default=False,
+              help="Generates QuantStats' HTML output with metrics reports like Sharpe ratio, Win rate, Volatility, etc., and batch plotting for visualizing performance, drawdowns, rolling statistics, monthly returns, etc.")
+def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: int, full_reports) -> None:
     """
-    backtest all candidate Ooptuna parameters.
+    backtest all Sequential candidate Optuna parameters.
     Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
     os.chdir(os.getcwd())
@@ -191,9 +195,44 @@ def refine_hp(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: 
         max_cpu = cpu
     print('CPU:', max_cpu)
 
-    from jessetk.RefineHp import RefineHp
-    r = RefineHp(hp_file, start_date, finish_date, eliminate, max_cpu)
+    from jessetk.RefineSeq import Refine
+    r = Refine(hp_file, start_date, finish_date, eliminate, max_cpu, full_reports=full_reports)
     r.run()
+    
+# @cli.command()
+# @click.argument('dna_file', required=True, type=str)
+# @click.argument('start_date', required=True, type=str)
+# @click.argument('finish_date', required=True, type=str)
+# @click.option('--eliminate/--no-eliminate', default=False,
+#               help='Remove worst performing dnas at every iteration.')
+# @click.option(
+#     '--cpu', default=0, show_default=True,
+#     help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
+# def refine_gly(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: int) -> None:
+#     """
+#     backtest all candidate dnas. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
+#     """
+#     os.chdir(os.getcwd())
+#     validate_cwd()
+#     validateconfig()
+#     makedirs()
+
+#     if not eliminate:
+#         eliminate = False
+
+#     if cpu > cpu_count():
+#         raise ValueError(
+#             f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
+#     elif cpu == 0:
+#         max_cpu = cpu_count()
+#     else:
+#         max_cpu = cpu
+#     print('CPU:', max_cpu)
+
+#     from jessetk.RefineGlyph import Refine
+#     r = Refine(dna_file, start_date, finish_date, eliminate, max_cpu)
+#     r.run()
+
 
 @cli.command()
 @click.argument('start_date', required=True, type=str)
@@ -507,7 +546,7 @@ def bulkdry(exchange: str, symbol: str, start_date: str, data_type: str, workers
 
     symbol = symbol.upper()
 
-    workers = max(workers, 2)
+    workers = max(workers, 8)
 
     try:
         sym = symbol.replace('-', '')
@@ -585,7 +624,7 @@ def bulk(exchange: str, symbol: str, start_date: str, workers: int) -> None:
         print(f'Invalid start date: {start_date}')
         exit()
 
-    workers = max(workers, 2)
+    workers = max(workers, 64)
 
     symbol = symbol.upper()
 
@@ -797,11 +836,14 @@ def testpairs(start_date: str, finish_date: str) -> None:
     '--dna', default='None', show_default=True, help='Base32 encoded dna string payload')
 @click.option(
     '--hp', default='None', show_default=True, help='Hyperparameters payload as dict')
+@click.option(
+    '--seq', default='None', show_default=True, help='Fixed width hyperparameters payload')
 def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bool, fee: bool, chart: bool,
-             tradingview: bool, full_reports: bool, dna: str, hp: str) -> None:
+             tradingview: bool, full_reports: bool, dna: str, hp: str, seq: str) -> None:
     """
     backtest mode. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
+    print('1')
     validate_cwd()
     
     config['app']['trading_mode'] = 'backtest'
@@ -814,52 +856,155 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
         for e in config['app']['trading_exchanges']:
             config['env']['exchanges'][e]['fee'] = 0
             get_exchange(e).fee = 0
-
+    print('2')
     # print(sys.argv)
-
-    # Inject payload DNA to route
-    if dna != 'None':
-        print('DNA to decode:', dna)
-
-        try:
-            dna_encoded = utils.decode_base32(dna)
-        except:
-            print(dna)
-            exit()
-            
-        for _route in router.routes:
-            _route.dna = dna_encoded
-            # print('New DNA:', _route.dna)
     
+    # for r in router.routes:
+    #     hp_new = None
+        
+    #     StrategyClass = jh.get_strategy_class(r.strategy_name)
+    #     r.strategy = StrategyClass()
+
+    #     r.strategy.name = r.strategy_name
+    #     r.strategy.exchange = r.exchange
+    #     r.strategy.symbol = r.symbol
+    #     r.strategy.timeframe = r.timeframe
+
+    hp_new = None
+    
+    r = router.routes[0]
+    StrategyClass = jh.get_strategy_class(r.strategy_name)
+    r.strategy = StrategyClass()
+    r.strategy.name = r.strategy_name
+    r.strategy.exchange = r.exchange
+    r.strategy.symbol = r.symbol
+    r.strategy.timeframe = r.timeframe
+    
+    print('3')
+    # Convert and inject regular DNA string to route
+    if r.dna:  # and dna != 'None' and seq != 'None' and hp != 'None':
+        hp_new = jh.dna_to_hp(r.strategy.hyperparameters(), r.dna)
+        print(f'DNA: {r.dna} -> HP: {hp_new}')
+        sleep(3)
+    print('3.1')
+    # Convert and inject base32 encoded DNA payload to route
+    if dna != 'None' and hp_new is None: # r.dna is None and seq is None and hp is None:
+        print('3.2')
+        print('Decode base32', utils.decode_base32(dna))
+        print('3.3')
+        hp_new = jh.dna_to_hp(r.strategy.hyperparameters(), utils.decode_base32(dna))
+        print(f'Base32 DNA: {dna} -> {hp_new}')
+        sleep(3)
+    
+    # Convert and inject SEQ encoded payload to route
+    if seq != 'None' and hp_new is None:  # and hp_new is None and r.dna is None and dna is None and hp is None:
+        seq_encoded = utils.decode_seq(seq)
+        hp_new = {}
+        
+        #Sort hyperparameters
+        for p, val in zip(r.strategy.hyperparameters(), seq_encoded):
+            # r.strategy.hyperparameters()[p] = hp[p]
+            # hp_new[p['name']] = hp[p]
+            # print(p['name'], p['default'])
+            hp_new[p['name']] = int(val)
+        # hp_new.update(hp)
+        # print('New hp:', hp_new)
+        # r.strategy.hp = hp_new
+        print(f'SEQ: {seq} -> {hp_new}')
+        sleep(3)
+    
+    # Convert and inject HP (Json) payload to route
+    if hp != 'None' and hp_new is None: # and hp_new is None and r.dna is None and dna is None and seq is None:
+        hp_dict = json_lib.loads(hp.replace("'", '"').replace('%', '"'))
+        hp_new = {}
+        
+        for p in r.strategy.hyperparameters():
+            # r.strategy.hyperparameters()[p] = hp[p]
+            # hp_new[p['name']] = hp[p]
+            # print(p['name'], p['default'])
+            hp_new[p['name']] = hp_dict[p['name']]
+        # hp_new.update(hp)
+        # print('New hp:', hp_new)
+        print(f'Json HP: {hp} -> {hp_new}')
+        sleep(3)
+    print('4')
+    # # Is this needed? YES!
+    # if hp_new is not None:
+    #     r.strategy.hp = hp_new
+    
+    # # Inject payload DNA to route ->
+    # if dna != 'None':
+    #     print('DNA to decode:', dna)
+    #     r = router.routes[0]
+    #     StrategyClass = jh.get_strategy_class(r.strategy_name)
+    #     r.strategy = StrategyClass()
+    #     hp_new = jh.dna_to_hp(r.strategy.hyperparameters(), utils.decode_base32(dna))
+    #     print(f'Dna: {dna} -> {hp_new}')
+    #     sleep(3)
+        
+        # try:
+        #     dna_encoded = utils.decode_base32(dna)
+        # except:
+        #     print('Dna decoding error!', dna)
+        #     exit()
+            
+        # for _route in router.routes:
+        #     _route.dna = dna_encoded
+    # <-------------------------------
+    
+    # Inject Seq payload to route ->
+    # if seq != 'None':
+    #     print('Seq to decode:', seq)
+    #     seq_encoded = utils.decode_seq(seq)
+
+    #     for r in router.routes:
+    #         StrategyClass = jh.get_strategy_class(r.strategy_name)
+    #         r.strategy = StrategyClass()
+            
+    #         hp_new = {}
+            
+    #         for p, val in zip(r.strategy.hyperparameters(), seq_encoded):
+    #             # r.strategy.hyperparameters()[p] = hp[p]
+    #             # hp_new[p['name']] = hp[p]
+    #             # print(p['name'], p['default'])
+    #             hp_new[p['name']] = int(val)
+    #         # hp_new.update(hp)
+    #         # print('New hp:', hp_new)
+    #         # r.strategy.hp = hp_new
+    #         print('New hp:', hp_new)
+    #         # sleep(5)
+    # # <-------------------------------
     # Inject payload HP to route
-    for r in router.routes:
-        # print(r)
-        StrategyClass = jh.get_strategy_class(r.strategy_name)
-        r.strategy = StrategyClass()
-        if hp != 'None':
-            print('Payload: ', hp, 'type:', type(hp))
+    # refactor this shit
+    # for r in router.routes:
+    #     # print(r)
+    #     StrategyClass = jh.get_strategy_class(r.strategy_name)
+    #     r.strategy = StrategyClass()
+    #     if hp != 'None':
+    #         print('Payload: ', hp, 'type:', type(hp))
             
-            hp_dict = json_lib.loads(hp.replace("'", '"'))
+    #         hp_dict = json_lib.loads(hp.replace("'", '"').replace('%', '"'))
             
-            # print('Old hp:', r.strategy.hyperparameters())
+    #         print('Old hp:', r.strategy.hyperparameters())
+    #         hp_new = {}
             
-            hp_new = {}
+    #         for p in r.strategy.hyperparameters():
+    #             # r.strategy.hyperparameters()[p] = hp[p]
+    #             # hp_new[p['name']] = hp[p]
+    #             # print(p['name'], p['default'])
+    #             hp_new[p['name']] = hp_dict[p['name']]
             
-            for p in r.strategy.hyperparameters():
-                # r.strategy.hyperparameters()[p] = hp[p]
-                # hp_new[p['name']] = hp[p]
-                # print(p['name'], p['default'])
-                hp_new[p['name']] = hp_dict[p['name']]
-            
-            # hp_new.update(hp)
-            # print('New hp:', hp_new)
-            r.strategy.hp =  hp_new
-        else:
-            hp_new = None
+    #         # hp_new.update(hp)
+    #         # print('New hp:', hp_new)
+    #         r.strategy.hp = hp_new
    
     # backtest_mode._initialized_strategies()
     backtest_mode.run(start_date, finish_date, chart=chart, tradingview=tradingview, csv=csv,
                       json=json, full_reports=full_reports, hyperparameters=hp_new)
+    
+    # Fix: Print out SeQ to console to help metrics module to grab it
+    if seq != 'None':
+        print('Sequential Hps:    |', seq)
 
     # try:    # Catch error when there's no trades.
     #     data = report.portfolio_metrics()
