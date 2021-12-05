@@ -19,7 +19,7 @@ import json as json_lib
 from jessetk import Vars, randomwalk, utils
 from jessetk.Vars import (Metrics, initial_test_message, random_console_formatter,
                           random_file_header, refine_file_header)
-from jessetk.utils import clear_console
+from jessetk.utils import clear_console, hp_to_seq
 
 # # Python version validation.
 # if jh.python_version() < 3.7:
@@ -856,7 +856,6 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
         for e in config['app']['trading_exchanges']:
             config['env']['exchanges'][e]['fee'] = 0
             get_exchange(e).fee = 0
-    print('2')
     # print(sys.argv)
     
     # for r in router.routes:
@@ -871,6 +870,8 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     #     r.strategy.timeframe = r.timeframe
 
     hp_new = None
+    routes_dna = None
+    decoded_base32_dna = None
     
     r = router.routes[0]
     StrategyClass = jh.get_strategy_class(r.strategy_name)
@@ -880,21 +881,18 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     r.strategy.symbol = r.symbol
     r.strategy.timeframe = r.timeframe
     
-    print('3')
     # Convert and inject regular DNA string to route
     if r.dna:  # and dna != 'None' and seq != 'None' and hp != 'None':
+        routes_dna = dna
         hp_new = jh.dna_to_hp(r.strategy.hyperparameters(), r.dna)
         print(f'DNA: {r.dna} -> HP: {hp_new}')
-        sleep(3)
-    print('3.1')
+        
     # Convert and inject base32 encoded DNA payload to route
     if dna != 'None' and hp_new is None: # r.dna is None and seq is None and hp is None:
-        print('3.2')
+        decoded_base32_dna = utils.decode_base32(dna)
         print('Decode base32', utils.decode_base32(dna))
-        print('3.3')
-        hp_new = jh.dna_to_hp(r.strategy.hyperparameters(), utils.decode_base32(dna))
+        hp_new = jh.dna_to_hp(r.strategy.hyperparameters(), decoded_base32_dna)
         print(f'Base32 DNA: {dna} -> {hp_new}')
-        sleep(3)
     
     # Convert and inject SEQ encoded payload to route
     if seq != 'None' and hp_new is None:  # and hp_new is None and r.dna is None and dna is None and hp is None:
@@ -911,8 +909,8 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
         # print('New hp:', hp_new)
         # r.strategy.hp = hp_new
         print(f'SEQ: {seq} -> {hp_new}')
-        sleep(3)
-    
+        
+    hp_dict = None
     # Convert and inject HP (Json) payload to route
     if hp != 'None' and hp_new is None: # and hp_new is None and r.dna is None and dna is None and seq is None:
         hp_dict = json_lib.loads(hp.replace("'", '"').replace('%', '"'))
@@ -926,8 +924,7 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
         # hp_new.update(hp)
         # print('New hp:', hp_new)
         print(f'Json HP: {hp} -> {hp_new}')
-        sleep(3)
-    print('4')
+        
     # # Is this needed? YES!
     # if hp_new is not None:
     #     r.strategy.hp = hp_new
@@ -1005,7 +1002,16 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     # Fix: Print out SeQ to console to help metrics module to grab it
     if seq != 'None':
         print('Sequential Hps:    |', seq)
+        
+    if hp_dict:
+        print('Sequential Hps:    |', hp_to_seq(hp))
 
+    if decoded_base32_dna:
+        print('Dna String:        |', decoded_base32_dna)
+    
+    if routes_dna:
+        print('Dna String:        |', routes_dna)
+    
     # try:    # Catch error when there's no trades.
     #     data = report.portfolio_metrics()
     #     print(data)
