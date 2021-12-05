@@ -10,7 +10,7 @@ Metrics = {
     'tf': None,  # timeframe
     'strategy': None,
     'dna': 'None',
-    'total_trades': 0,
+    'total_trades': None,
     'total_profit': 0.0,
     'max_dd': 0.0,
     'annual_return': 0.0,
@@ -22,6 +22,8 @@ Metrics = {
     'sharpe': 0.0,
     'calmar': 0.0,
     'sortino': 0.0,
+    'smart_sharpe': None,
+    'smart_sortino': None,
     'win_strk': 0.0,
     'lose_strk': 0.0,
     'largest_win': 0.0,
@@ -29,6 +31,7 @@ Metrics = {
     'n_of_wins': 0,
     'n_of_loses': 0,
     'market_change': 0.0,
+    'seq_hps': 'None',
 }
 
 refine_file_header = ['Pair',
@@ -94,7 +97,7 @@ refine_console_header2 = ['String',
                           'Fees',
                           'Change %']
 
-refine_console_formatter = '{: <12} {: <6} {: <5} {: <7}{: <12} {: <8} {: <10} {: <8} {: <8} {: <8} {: <8} {: <8} {: <8} ' \
+refine_console_formatter = '{: <22} {: <6} {: <5} {: <7}{: <12} {: <8} {: <10} {: <8} {: <8} {: <8} {: <8} {: <8} {: <8} ' \
                            '{: <12} {: <12} {: <10} {: <8} {: <8} {: <8}'
 
 random_file_header = ['Pair',  # TODO Pairs for multi routes?
