@@ -17,7 +17,7 @@ class BulkJesse(Bulk):
         self.tf = '1m'
         self.margin_type = 'um'
         self.data_type = 'klines'
-        self.worker_count = 2
+        self.worker_count = 8
         # Get list of months since start date
         months = get_months(self.start, self.end)
         # Get this month's days except today
