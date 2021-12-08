@@ -536,7 +536,7 @@ def bulkdry(exchange: str, symbol: str, start_date: str, data_type: str, workers
 
     os.chdir(os.getcwd())
     validate_cwd()
-    validateconfig()
+    # validateconfig()
 
     try:
         start = parser.parse(start_date)
@@ -615,7 +615,7 @@ def bulk(exchange: str, symbol: str, start_date: str, workers: int) -> None:
 
     os.chdir(os.getcwd())
     validate_cwd()
-    validateconfig()
+    # validateconfig()
     exchange = exchange.lower()
 
     try:
@@ -681,7 +681,7 @@ def bulkpairs(exchange: str, start_date: str, workers: int) -> None:
 
     os.chdir(os.getcwd())
     validate_cwd()
-    validateconfig()
+    # validateconfig()
     exchange = exchange.lower()
 
     try:
@@ -923,7 +923,7 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
             hp_new[p['name']] = hp_dict[p['name']]
         # hp_new.update(hp)
         # print('New hp:', hp_new)
-        print(f'Json HP: {hp} -> {hp_new}')
+        # print(f'Json HP: {hp} -> {hp_new}')
         
     # # Is this needed? YES!
     # if hp_new is not None:
@@ -1003,8 +1003,8 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     if seq != 'None':
         print('Sequential Hps:    |', seq)
         
-    if hp_dict:
-        print('Sequential Hps:    |', hp_to_seq(hp))
+    if hp != 'None':
+        print('Sequential Hps:    |', hp)
 
     if decoded_base32_dna:
         print('Dna String:        |', decoded_base32_dna)
@@ -1038,17 +1038,18 @@ def makedirs():
     os.makedirs(f'./{datadir}/pairfiles', exist_ok=True)
 
 
-def validateconfig():  # TODO Modify config without user interaction!
-    if not (get_config('env.metrics.sharpe_ratio', False) and
-            get_config('env.metrics.calmar_ratio', False) and
-            get_config('env.metrics.winning_streak', False) and
-            get_config('env.metrics.losing_streak', False) and
-            get_config('env.metrics.largest_losing_trade', False) and
-            get_config('env.metrics.largest_winning_trade', False) and
-            get_config('env.metrics.total_winning_trades', False) and
-            get_config('env.metrics.total_losing_trades', False)):
-        print('Set optional metrics to True in config.py!')
-        exit()
+def validateconfig():
+    pass
+    # if not (get_config('env.metrics.sharpe_ratio', False) and
+    #         get_config('env.metrics.calmar_ratio', False) and
+    #         get_config('env.metrics.winning_streak', False) and
+    #         get_config('env.metrics.losing_streak', False) and
+    #         get_config('env.metrics.largest_losing_trade', False) and
+    #         get_config('env.metrics.largest_winning_trade', False) and
+    #         get_config('env.metrics.total_winning_trades', False) and
+    #         get_config('env.metrics.total_losing_trades', False)):
+    #     print('Set optional metrics to True in config.py!')
+    #     exit()
 
 # @cli.command()
 # @click.argument('dna_file', required=True, type=str)
