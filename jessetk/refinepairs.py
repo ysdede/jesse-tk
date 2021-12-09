@@ -316,7 +316,7 @@ def refine(pair, dna_file, _start_date, _finish_date):
     clearConsole = lambda: os.system('cls' if os.name in ('nt', 'dos') else 'clear')
 
     ts = datetime.now().strftime("%Y%m%d %H%M%S")
-    # TODO Create results, logs, dnafiles folders if needed.
+    
     filename = f'{exchange}-{pair}-{timeframe}--{_start_date}--{_finish_date}'
 
     reportfilename = f'{jessepickerdir}/results/{filename}--{ts}.csv'
