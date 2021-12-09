@@ -397,7 +397,7 @@ def refine(pair, dna_file, _start_date, _finish_date):
     f.close()
 
     # Create csv report
-    # TODO: Pick better csv escape character, standart ',' fails sometimes
+    
     f = open(reportfilename, 'w', encoding='utf-8')
     f.write(str(headerforfiles).replace('[', '').replace(']', '').replace(' ', '') + '\n')
     for srline in sortedresults:
