@@ -810,17 +810,18 @@ def makedirs():
     os.makedirs(f'./{datadir}/pairfiles', exist_ok=True)
 
 
-def validateconfig():  # TODO Modify config without user interaction!
-    if not (get_config('env.metrics.sharpe_ratio', False) and
-            get_config('env.metrics.calmar_ratio', False) and
-            get_config('env.metrics.winning_streak', False) and
-            get_config('env.metrics.losing_streak', False) and
-            get_config('env.metrics.largest_losing_trade', False) and
-            get_config('env.metrics.largest_winning_trade', False) and
-            get_config('env.metrics.total_winning_trades', False) and
-            get_config('env.metrics.total_losing_trades', False)):
-        print('Set optional metrics to True in config.py!')
-        exit()
+def validateconfig():
+    pass
+    # if not (get_config('env.metrics.sharpe_ratio', False) and
+    #         get_config('env.metrics.calmar_ratio', False) and
+    #         get_config('env.metrics.winning_streak', False) and
+    #         get_config('env.metrics.losing_streak', False) and
+    #         get_config('env.metrics.largest_losing_trade', False) and
+    #         get_config('env.metrics.largest_winning_trade', False) and
+    #         get_config('env.metrics.total_winning_trades', False) and
+    #         get_config('env.metrics.total_losing_trades', False)):
+    #     print('Set optional metrics to True in config.py!')
+    #     exit()
 
 # @cli.command()
 # @click.argument('dna_file', required=True, type=str)
