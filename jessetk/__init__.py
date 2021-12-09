@@ -275,108 +275,107 @@ def randomrefine(dna_file: str, start_date: str, finish_date: str, iterations: i
     print('Not implemented yet!')
     exit()
 
-    os.chdir(os.getcwd())
-    validate_cwd()
-    validateconfig()
-    makedirs()
+    # os.chdir(os.getcwd())
+    # validate_cwd()
+    # validateconfig()
+    # makedirs()
 
-    from jessetk.Vars import datadir
-    os.makedirs(f'./{datadir}/results', exist_ok=True)
+    # from jessetk.Vars import datadir
+    # os.makedirs(f'./{datadir}/results', exist_ok=True)
 
-    if cpu > cpu_count():
-        raise ValueError(
-            f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
-    elif cpu == 0:
-        max_cpu = cpu_count()
-    else:
-        max_cpu = cpu
+    # if cpu > cpu_count():
+    #     raise ValueError(
+    #         f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
+    # elif cpu == 0:
+    #     max_cpu = cpu_count()
+    # else:
+    #     max_cpu = cpu
 
-    print('Cpu count:', cpu_count(), 'Used:', max_cpu)
+    # print('Cpu count:', cpu_count(), 'Used:', max_cpu)
 
-    # if not eliminate:
-    #     eliminate = False
-    eliminate = False
-    from jessetk.refine import refine
-    r = refine(dna_file, start_date, finish_date, eliminate)
-    r.run(dna_file, start_date, finish_date)
+    # # if not eliminate:
+    # #     eliminate = False
+    # eliminate = False
+    # from jessetk.refine import refine
+    # r = refine(dna_file, start_date, finish_date, eliminate)
+    # r.run(dna_file, start_date, finish_date)
 
-    if not iterations or iterations < 0:
-        iterations = 32
-        print(f'Iterations not provided, falling back to {iterations} iters!')
-    if not width:
-        width = 40
-        print(
-            f'Window width not provided, falling back to {width} days window!')
+    # if not iterations or iterations < 0:
+    #     iterations = 32
+    #     print(f'Iterations not provided, falling back to {iterations} iters!')
+    # if not width:
+    #     width = 40
+    #     print(
+    #         f'Window width not provided, falling back to {width} days window!')
 
-    if cpu > cpu_count():
-        raise ValueError(
-            f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
-    elif cpu == 0:
-        max_cpu = cpu_count()
-    else:
-        max_cpu = cpu
+    # if cpu > cpu_count():
+    #     raise ValueError(
+    #         f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
+    # elif cpu == 0:
+    #     max_cpu = cpu_count()
+    # else:
+    #     max_cpu = cpu
 
-    print('Cpu count:', cpu_count(), 'Used:', max_cpu)
-    from jessetk.RandomRefine import RandomRefine
-    from jessetk.RandomWalkTh import RandomWalk
+    # print('Cpu count:', cpu_count(), 'Used:', max_cpu)
+    # from jessetk.RandomRefine import RandomRefine
+    # from jessetk.RandomWalkTh import RandomWalk
 
-    # TODO
-    rrefine = RandomRefine(dna_file, start_date, finish_date, False)
-    rwth = RandomWalk(start_date, finish_date, iterations, width, max_cpu)
-    rwth.run()
-    #
+    # rrefine = RandomRefine(dna_file, start_date, finish_date, False)
+    # rwth = RandomWalk(start_date, finish_date, iterations, width, max_cpu)
+    # rwth.run()
+    # #
 
-    rrefine.import_dnas()
-    rrefine.routes_template = utils.read_file('routes.py')
+    # rrefine.import_dnas()
+    # rrefine.routes_template = utils.read_file('routes.py')
 
-    results = []
-    start = timer()
-    print_initial_msg()
-    for index, dnac in enumerate(rrefine.dnas, start=1):
-        # Inject dna to routes.py
-        utils.make_routes(rrefine.routes_template,
-                          rrefine.anchor, dna_code=dnac[0])
+    # results = []
+    # start = timer()
+    # print_initial_msg()
+    # for index, dnac in enumerate(rrefine.dnas, start=1):
+    #     # Inject dna to routes.py
+    #     utils.make_routes(rrefine.routes_template,
+    #                       rrefine.anchor, dna_code=dnac[0])
 
-        # Run jesse backtest and grab console output  # TODO RUN RANDOM HERE
-        console_output = utils.run_test(start_date, finish_date)
+    #     # Run jesse backtest and grab console output
+    #     console_output = utils.run_test(start_date, finish_date)
 
-        # Scrape console output and return metrics as a dict
-        metric = utils.get_metrics3(console_output)
+    #     # Scrape console output and return metrics as a dict
+    #     metric = utils.get_metrics3(console_output)
 
-        if metric not in results:
-            results.append(deepcopy(metric))
-        # f.write(str(metric) + '\n')  # Logging disabled
-        # f.flush()
-        sorted_results_prelist = sorted(
-            results, key=lambda x: float(x['sharpe']), reverse=True)
-        rrefine.sorted_results = []
+    #     if metric not in results:
+    #         results.append(deepcopy(metric))
+    #     # f.write(str(metric) + '\n')  # Logging disabled
+    #     # f.flush()
+    #     sorted_results_prelist = sorted(
+    #         results, key=lambda x: float(x['sharpe']), reverse=True)
+    #     rrefine.sorted_results = []
 
-        if rrefine.eliminate:
-            for r in sorted_results_prelist:
-                if float(r['sharpe']) > 0:
-                    rrefine.sorted_results.append(r)
-        else:
-            rrefine.sorted_results = sorted_results_prelist
+    #     if rrefine.eliminate:
+    #         for r in sorted_results_prelist:
+    #             if float(r['sharpe']) > 0:
+    #                 rrefine.sorted_results.append(r)
+    #     else:
+    #         rrefine.sorted_results = sorted_results_prelist
 
-        clear_console()
+    #     clear_console()
 
-        eta = ((timer() - start) / index) * (rrefine.n_of_dnas - index)
-        eta_formatted = strftime("%H:%M:%S", gmtime(eta))
-        print(
-            f'{index}/{rrefine.n_of_dnas}\teta: {eta_formatted} | {rrefine.pair} '
-            f'| {rrefine.timeframe} | {rrefine.start_date} -> {rrefine.finish_date}')
+    #     eta = ((timer() - start) / index) * (rrefine.n_of_dnas - index)
+    #     eta_formatted = strftime("%H:%M:%S", gmtime(eta))
+    #     print(
+    #         f'{index}/{rrefine.n_of_dnas}\teta: {eta_formatted} | {rrefine.pair} '
+    #         f'| {rrefine.timeframe} | {rrefine.start_date} -> {rrefine.finish_date}')
 
-        rrefine.print_tops_formatted()
+    #     rrefine.print_tops_formatted()
 
-    utils.write_file('routes.py', rrefine.routes_template)  # Restore routes.py
+    # utils.write_file('routes.py', rrefine.routes_template)  # Restore routes.py
 
-    if rrefine.eliminate:
-        rrefine.save_dnas(rrefine.sorted_results, dna_file)
-    else:
-        rrefine.save_dnas(rrefine.sorted_results)
+    # if rrefine.eliminate:
+    #     rrefine.save_dnas(rrefine.sorted_results, dna_file)
+    # else:
+    #     rrefine.save_dnas(rrefine.sorted_results)
 
-    utils.create_csv_report(rrefine.sorted_results,
-                            rrefine.report_file_name, refine_file_header)
+    # utils.create_csv_report(rrefine.sorted_results,
+    #                         rrefine.report_file_name, refine_file_header)
 
 
 @cli.command()
