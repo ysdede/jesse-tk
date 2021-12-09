@@ -293,7 +293,6 @@ def refine(pair, dna_file, _start_date, _finish_date):
     strategy = r.strategy_name
 
     removesimilardnas = False
-    # _start_date, _finish_date = '2019-01-01', '2020-01-01'  # TODO: Use args
 
     key = '!ChangeIt!'  # Used for injecting variables to strategy file.
 
