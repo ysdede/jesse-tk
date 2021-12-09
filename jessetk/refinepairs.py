@@ -363,8 +363,9 @@ def refine(pair, dna_file, _start_date, _finish_date):
         # print(_start_date, _finish_date, pair, timeframe, dnac[0])
         ress = refine_runtest(_start_date=_start_date, _finish_date=_finish_date, _pair=pair, _tf=timeframe,
                               _dnaid=dnac[0])
-        if ress == "Break!": break
-        # print(ress)
+        if ress == "Break!":
+            break
+        
         if ress not in results:
             results.append(ress)
 
