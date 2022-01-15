@@ -293,7 +293,6 @@ def refine(pair, dna_file, _start_date, _finish_date):
     strategy = r.strategy_name
 
     removesimilardnas = False
-    # _start_date, _finish_date = '2019-01-01', '2020-01-01'  # TODO: Use args
 
     key = '!ChangeIt!'  # Used for injecting variables to strategy file.
 
@@ -317,7 +316,7 @@ def refine(pair, dna_file, _start_date, _finish_date):
     clearConsole = lambda: os.system('cls' if os.name in ('nt', 'dos') else 'clear')
 
     ts = datetime.now().strftime("%Y%m%d %H%M%S")
-    # TODO Create results, logs, dnafiles folders if needed.
+    
     filename = f'{exchange}-{pair}-{timeframe}--{_start_date}--{_finish_date}'
 
     reportfilename = f'{jessepickerdir}/results/{filename}--{ts}.csv'
@@ -364,8 +363,9 @@ def refine(pair, dna_file, _start_date, _finish_date):
         # print(_start_date, _finish_date, pair, timeframe, dnac[0])
         ress = refine_runtest(_start_date=_start_date, _finish_date=_finish_date, _pair=pair, _tf=timeframe,
                               _dnaid=dnac[0])
-        if ress == "Break!": break
-        # print(ress)
+        if ress == "Break!":
+            break
+        
         if ress not in results:
             results.append(ress)
 
@@ -398,7 +398,7 @@ def refine(pair, dna_file, _start_date, _finish_date):
     f.close()
 
     # Create csv report
-    # TODO: Pick better csv escape character, standart ',' fails sometimes
+    
     f = open(reportfilename, 'w', encoding='utf-8')
     f.write(str(headerforfiles).replace('[', '').replace(']', '').replace(' ', '') + '\n')
     for srline in sortedresults:
