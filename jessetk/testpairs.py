@@ -58,8 +58,7 @@ def split(_str):
 def getmetrics(_pair, _tf, _dna, metrics, _startdate, _enddate):
     metr = [_pair, _tf, _dna, _startdate, _enddate]
     lines = metrics.splitlines()
-    for index, line in enumerate(lines):
-
+    for line in lines:
         if 'Aborted!' in line:
             print(metrics)
             print("Aborted! error. Possibly pickle database is corrupt. Delete temp/ folder to fix.")
@@ -217,7 +216,7 @@ def run(_start_date, _finish_date):
         global routes_template
         routes_template = read_file('routes.py')
         print(routes_template)
-        
+
 
         pairs_list = None
 
@@ -274,7 +273,7 @@ def run(_start_date, _finish_date):
                 formatter.format(*header1))
             print(
                 formatter.format(*header2))
-            topresults = sortedresults[0:30]
+            topresults = sortedresults[:30]
             # print(topresults)
             for r in topresults:
                 print(
