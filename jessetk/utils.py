@@ -1,10 +1,91 @@
 import base64
-from multiprocessing import cpu_count
 import os
+from multiprocessing import cpu_count
 from subprocess import PIPE, Popen
+from time import sleep
+
+from jesse.helpers import convert_number
 
 import jessetk.Vars
-from jessetk.Vars import random_console_formatter, random_console_header1, random_console_header2
+from jessetk.Vars import (random_console_formatter, random_console_header1,
+                          random_console_header2)
+from jesse.routes import router
+import jesse.helpers as jh
+# from emoji_list_new import emojis
+from jessetk.emoji_list_new import emojis
+
+
+def hp_to_seq(rounded_params):
+    longest_param = 0
+    
+    for v in rounded_params.values():
+         # use max() instead?
+        #  longest_param = max(longest_param, len(str(v)))
+        if len(str(v)) > longest_param: 
+            longest_param = len(str(v))
+    
+    hash = ''.join([f'{value:0>{longest_param}}' for key, value in rounded_params.items()])
+    return f'{hash}{longest_param}'
+
+def decode_seq(seq):
+    # Get the sequence width from the last char
+    width = int(seq[-1])
+    # Remove the width from the sequence
+    seq = seq[:-1]
+    return [seq[i:i+width] for i in range(0, len(seq), width)]
+
+
+def decode_glyphs(emoji):
+    r = router.routes[0]
+    StrategyClass = jh.get_strategy_class(r.strategy_name)
+    r.strategy = StrategyClass()
+    hp = {}
+    # reverse_emojis = dict(zip(emojis.values(),emojis.keys()))
+    print(r.strategy.hyperparameters(), emoji)
+            
+    for p, e in zip(r.strategy.hyperparameters(), emoji):
+            # r.strategy.hyperparameters()[p] = hp[p]
+            # hp_new[p['name']] = hp[p]
+            # print(p['name'], p['default'])
+            for i in emojis:
+                # print(i[0], i[1], e)
+                if i[1] == e:
+                    hp[p['name']] = i[0]
+                    print(p['name'], i[0])
+                    break
+            
+            # print(reverse_emojis['😒'])
+            # print(e, 'e')
+            # print(p , reverse_emojis[e])
+            # hp[p['name']] = reverse_emojis[e]
+    return hp
+            
+
+def hp_to_dna(strategy_hp, hps):    # TODO - make it work with floats too
+    """Returns DNA code from HP parameters
+    example input: {'ott_len': 3, 'ott_percent': 420, 'stop_loss': 329, 'risk_reward': 19, 'chop_rsi_len': 27, 'chop_bandwidth': 21}
+    example output: *Og2O+
+
+    Args:
+        strategy_hp (StrategyClass.hyperparameters(None): Hyperparameters defined in StrategyClass
+        hps (Dict): Values to be converted to DNA
+
+    Returns:
+        str: encoded DNA string
+    """
+    return ''.join(
+        chr(
+            int(
+                round(
+                    convert_number(
+                        param['max'], param['min'], 119, 40, hps[dec]
+                    )
+                )
+            )
+        )
+        for dec, param in zip(hps, strategy_hp)
+    )
+
 
 def cpu_info(cpu):
     if cpu > cpu_count():
@@ -16,6 +97,7 @@ def cpu_info(cpu):
         max_cpu = cpu
     print('Cpu count:', cpu_count(), 'In use:', max_cpu)
     return max_cpu
+
 
 def encode_base32(s):
     s_bytes = s.encode('ascii')
@@ -63,6 +145,11 @@ def split(line):
     r = r.replace(')', '')
     r = r.replace('(', '')
     return r.replace(',', '')
+
+def split_dna_string(line):
+    ll = line.split(' ')
+    return ll[len(ll) - 1]
+    
 
 
 def split_n_of_longs_shorts(line):
@@ -112,7 +199,7 @@ def print_random_header():
 
 
 def print_random_tops(sr, top_n):
-    for r in sr[0:top_n]:
+    for r in sr[:top_n]:
         print(
             random_console_formatter.format(
                 r['start_date'],
@@ -235,6 +322,15 @@ def get_metrics3(console_output) -> dict:
         if 'Calmar Ratio' in line:
             metrics['calmar'] = round(float(split(line)), 2)
 
+        if 'Sortino Ratio' in line:
+            metrics['sortino'] = round(float(split(line)), 2)
+
+        if 'Smart Sharpe' in line:
+            metrics['smart_sharpe'] = round(float(split(line)), 2)
+
+        if 'Smart Sortino' in line:
+            metrics['smart_sortino'] = round(float(split(line)), 2)
+
         if 'Winning Streak' in line:
             metrics['win_strk'] = int(split(line))
 
@@ -242,7 +338,8 @@ def get_metrics3(console_output) -> dict:
             metrics['lose_strk'] = int(split(line))
 
         if 'Longs | Shorts' in line:
-            metrics['n_of_longs'], metrics['n_of_shorts'] = split_n_of_longs_shorts(line)
+            metrics['n_of_longs'], metrics['n_of_shorts'] = split_n_of_longs_shorts(
+                line)
 
         if 'Largest Winning Trade' in line:
             metrics['largest_win'] = round(float(split(line)), 2)
@@ -258,6 +355,13 @@ def get_metrics3(console_output) -> dict:
 
         if 'Market Change' in line:
             metrics['market_change'] = round(float(split(line)), 2)
+            
+        if 'Dna String:' in line:
+            metrics['dna'] = split_dna_string(line)
+        
+        if 'Sequential Hps' in line:
+            metrics['seq_hps'] = split(line)
+            
     return metrics
 
 
