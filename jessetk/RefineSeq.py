@@ -19,8 +19,9 @@ from jessetk.Vars import datadir
 from jessetk.Vars import refine_file_header
 import json
 
+
 class Refine:
-    def __init__(self, hp_py_file, start_date, finish_date, eliminate, cpu, full_reports):
+    def __init__(self, hp_py_file, start_date, finish_date, eliminate, cpu, dd, full_reports):
 
         import signal
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -30,6 +31,7 @@ class Refine:
         self.finish_date = finish_date
         self.cpu = cpu
         self.eliminate = eliminate
+        self.dd = dd
         self.fr = '--full-reports' if full_reports else ''
         self.jessetkdir = datadir
         self.anchor = 'DNA!'
@@ -121,7 +123,7 @@ class Refine:
                 if metric not in results:
                     results.append(deepcopy(metric))
 
-                sorted_results_prelist = sorted(results, key=lambda x: float(x['sharpe']), reverse=True)
+                sorted_results_prelist = sorted(results, key=lambda x: float(x['calmar']), reverse=True)
                 # print(f'Sorted results: {sorted_results_prelist}')
                 # print('Sorted results', len(sorted_results_prelist))
                 
@@ -151,6 +153,18 @@ class Refine:
         # else:
         #     self.save_dnas(self.sorted_results)
 
+        # self.save_seq(self.sorted_results)
+
+        candidates = {}
+
+        for r in self.sorted_results:
+            if r['max_dd'] > self.dd:
+                candidates[r['dna']] = r['dna']
+
+        with open(f'SEQ-{self.pair}-{self.strategy}-{self.start_date}-{self.finish_date}.py', 'w') as f:
+            f.write("hps = ")
+            f.write(json.dumps(candidates, indent=1))
+
         utils.create_csv_report(self.sorted_results,
                                 self.report_file_name, refine_file_header)
 
@@ -160,7 +174,7 @@ class Refine:
         sys.exit(0)
 
     def import_dnas(self):
-        module_name = self.hp_py_file.replace('\\', '.').replace('.py', '')
+        module_name = self.hp_py_file.replace('.\\', '').replace('.py', '')
         module_name = module_name.replace('/', '.').replace('.py', '')
         print(module_name)
 
