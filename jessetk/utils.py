@@ -14,6 +14,95 @@ import jesse.helpers as jh
 # from emoji_list_new import emojis
 from jessetk.emoji_list_new import emojis
 
+from dateutil.parser import isoparse
+import psycopg2
+import urllib
+import json
+from datetime import datetime
+from dateutil.tz import UTC
+from jesse.config import config
+
+def get_symbols_list(exchange: str = 'Binance Futures', quote_asset: str = 'USDT') -> list:
+    local_fn = f"{exchange.replace(' ', '')}ExchangeInfo.json"
+    urls = {'Binance': 'https://api.binance.com/api/v1/exchangeInfo', 'Binance Futures': 'https://fapi.binance.com/fapi/v1/exchangeInfo'}
+    symbols_list = []
+
+    try:
+        with urllib.request.urlopen(urls[exchange]) as url:
+            data = json.loads(url.read().decode())
+        
+        # save url to file
+        if int(data['serverTime']):
+            try:
+                with open(local_fn, 'w') as f:
+                    json.dump(data, f)
+            except:
+                print(f"Failed to save {local_fn}")
+
+    except Exception as e:
+        print(f"Error while fetching data from {exchange}. {e}")
+
+        try:
+            with open(local_fn) as f:
+                data = json.load(f)
+
+            print(f"Using cached local data from {datetime.utcfromtimestamp(data['serverTime'] / 1000).strftime('%Y-%m-%d %H:%M')}")
+        except Exception as e:
+            print(f"Error while loading local api data for {exchange}. {e}")
+            return None
+
+    symbols = []
+
+    for sym in data['symbols']:
+        blvt = False
+
+        # Check if symbol is a leveraged token (UP/DOWN)
+
+        try:
+            blvt  = 'LEVERAGED' in sym['permissions']
+        except:
+            pass        
+        
+        if sym['quoteAsset'] == quote_asset and not blvt:
+            # print(f"{sym['baseAsset']}-{quote_asset}")
+            symbols.append(f"{sym['baseAsset']}-{quote_asset}")
+    if symbols:
+        return symbols
+    else:
+        return None
+
+def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures') -> list:
+    symbols_list = None
+    date = isoparse(start_date + 'T00:00:00+00:00').astimezone(UTC)
+    epoch = int(date.timestamp() * 1000)
+
+    db_name = config['env']['databases']['postgres_name']
+    db_user = config['env']['databases']['postgres_username']
+    db_pass = config['env']['databases']['postgres_password']
+    db_host = config['env']['databases']['postgres_host']
+    db_port = config['env']['databases']['postgres_port']
+
+    try:
+        conn = psycopg2.connect(database=db_name, user=db_user, password=db_pass, host=db_host, port=db_port)
+
+        cursor = conn.cursor()
+        query = f"select symbol from public.candle where exchange = '{exchange}' and timestamp = {epoch} group by symbol;"
+        cursor.execute(query)
+        symbols = cursor.fetchall()
+        symbols_list = [x[0] for x in symbols]
+        
+    except (Exception, psycopg2.Error) as error:
+        print("Error while fetching data from PostgreSQL", error)
+        return []
+
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+        if symbols_list:
+            return symbols_list
+        else:
+            return []
 
 def hp_to_seq(rounded_params):
     longest_param = 0
@@ -286,6 +375,10 @@ def get_metrics3(console_output) -> dict:
             exit(1)
 
         if 'No trades were made' in line:
+            return metrics
+        
+        if 'InsufficientMargin' in line:
+            print(console_output)
             return metrics
 
         if 'starting-ending date' in line:
