@@ -72,8 +72,7 @@ class RandomWalk:
                         f'jesse-tk backtest {rand_period_start} {rand_period_finish}')
                     iters -= 1
 
-            print(commands)
-            processes = [Popen(cmd, shell=True, stdout=PIPE) for cmd in commands]
+            processes = [Popen(cmd, stdout=PIPE, shell=True) for cmd in commands]
             # wait for completion
             for p in processes:
                 p.wait()

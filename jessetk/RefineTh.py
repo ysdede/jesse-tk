@@ -218,12 +218,16 @@ class Refine:
 
     # v TODO Move to utils
     def print_tops_formatted(self):
+
+        print('\033[1m', end='')
         print(
             Vars.refine_console_formatter.format(*Vars.refine_console_header1))
         print(
             Vars.refine_console_formatter.format(*Vars.refine_console_header2))
 
-        for r in self.sorted_results[0:25]:
+        print('\033[0m', end='')
+
+        for r in self.sorted_results[:25]:
             print(
                 Vars.refine_console_formatter.format(
                     r['dna'],
