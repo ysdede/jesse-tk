@@ -30,7 +30,7 @@ def get_symbols_list(exchange: str = 'Binance Futures', quote_asset: str = 'USDT
     try:
         with urllib.request.urlopen(urls[exchange]) as url:
             data = json.loads(url.read().decode())
-        
+
         # save url to file
         if int(data['serverTime']):
             try:
@@ -62,18 +62,15 @@ def get_symbols_list(exchange: str = 'Binance Futures', quote_asset: str = 'USDT
             blvt  = 'LEVERAGED' in sym['permissions']
         except:
             pass        
-        
+
         if sym['quoteAsset'] == quote_asset and not blvt:
             # print(f"{sym['baseAsset']}-{quote_asset}")
             symbols.append(f"{sym['baseAsset']}-{quote_asset}")
-    if symbols:
-        return symbols
-    else:
-        return None
+    return symbols or None
 
 def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures') -> list:
     symbols_list = None
-    date = isoparse(start_date + 'T00:00:00+00:00').astimezone(UTC)
+    date = isoparse(f'{start_date}T00:00:00+00:00').astimezone(UTC)
     epoch = int(date.timestamp() * 1000)
 
     db_name = config['env']['databases']['postgres_name']
@@ -90,7 +87,7 @@ def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures
         cursor.execute(query)
         symbols = cursor.fetchall()
         symbols_list = [x[0] for x in symbols]
-        
+
     except (Exception, psycopg2.Error) as error:
         print("Error while fetching data from PostgreSQL", error)
         return []
@@ -99,10 +96,7 @@ def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures
         if conn:
             cursor.close()
             conn.close()
-        if symbols_list:
-            return symbols_list
-        else:
-            return []
+        return symbols_list or []
 
 def hp_to_seq(rounded_params):
     longest_param = 0
