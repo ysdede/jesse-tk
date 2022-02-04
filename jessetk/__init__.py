@@ -703,10 +703,7 @@ def bulkpairs(exchange: str, start_date: str, workers: int, all) -> None:
 
     end = arrow.utcnow().floor('month').shift(months=-1)
     
-    print(exchange)
-    print(exchange_data[exchange])
-    print(exchange_data.keys())
-    print(exchange_data[exchange]['market_type'])
+    print(exchange_data[exchange], exchange_data[exchange]['market_type'])
 
     if exchange in exchange_data.keys():
         exchange_name = exchange_data[exchange]['exchange']
