@@ -705,7 +705,7 @@ def bulkpairs(exchange: str, start_date: str, workers: int, all) -> None:
     
     print(exchange_data[exchange], exchange_data[exchange]['market_type'])
 
-    if exchange in exchange_data.keys():
+    if exchange in exchange_data:
         exchange_name = exchange_data[exchange]['exchange']
         market_type = exchange_data[exchange]['market_type']
         margin_type = exchange_data[exchange]['margin_type']
@@ -719,30 +719,28 @@ def bulkpairs(exchange: str, start_date: str, workers: int, all) -> None:
             print(f"There's {len(pairs_list)} available pairs in {exchange_name}:")
             print(pairs_list)
             print(f"There's {len(db_symbols)} available pairs in candle database at: {start_date}")
-        else:
-            # Get pair list from user defined py file
-            if exchange_data[exchange]['market_type'] == 'spot':
-                try:
-                    import pairs
-                    pairs_list = pairs.binance_spot_pairs
-                except ImportError:
-                    print('Pairs file not found in project folder, loading default pairs list.')
-                    import jessetk.pairs
-                    pairs_list = jessetk.pairs.binance_spot_pairs
-                except:
-                    print('Can not import pairs!')
-                    exit()
-            elif exchange_data[exchange]['market_type'] == 'futures':
-                try:
-                    import pairs
-                    pairs_list = pairs.binance_perp_pairs
-                except ImportError:
-                    print('Pairs file not found in project folder, loading default pairs list.')
-                    import jessetk.pairs
-                    pairs_list = jessetk.pairs.binance_perp_pairs
-                except:
-                    print('Can not import pairs!')
-                    exit()
+        elif exchange_data[exchange]['market_type'] == 'spot':
+            try:
+                import pairs
+                pairs_list = pairs.binance_spot_pairs
+            except ImportError:
+                print('Pairs file not found in project folder, loading default pairs list.')
+                import jessetk.pairs
+                pairs_list = jessetk.pairs.binance_spot_pairs
+            except:
+                print('Can not import pairs!')
+                exit()
+        elif exchange_data[exchange]['market_type'] == 'futures':
+            try:
+                import pairs
+                pairs_list = pairs.binance_perp_pairs
+            except ImportError:
+                print('Pairs file not found in project folder, loading default pairs list.')
+                import jessetk.pairs
+                pairs_list = jessetk.pairs.binance_perp_pairs
+            except:
+                print('Can not import pairs!')
+                exit()
     else:
         print('Invalid market type! Enter: binance, binance futures, spot or futures')
         exit()
