@@ -63,9 +63,10 @@ def get_symbols_list(exchange: str = 'Binance Futures', quote_asset: str = 'USDT
         except:
             pass        
         
-        if sym['quoteAsset'] == quote_asset and not blvt:
+        if sym['quoteAsset'] == quote_asset and not blvt and sym['status'] != 'BREAK':
             # print(f"{sym['baseAsset']}-{quote_asset}")
             symbols.append(f"{sym['baseAsset']}-{quote_asset}")
+
     if symbols:
         return symbols
     else:
