@@ -84,24 +84,24 @@ class Refine:
                     hps = self.params[index]  # str(self.params[index][1])
                     # hps = json.dumps(hps).replace('"', '%')
                     # print(f'parameters: {hps}')
-                    
+
                     commands.append(
                         f'jesse-tk backtest {self.start_date} {self.finish_date} --seq {hps} {self.fr}'
                         )
                         # ['jesse-tk', 'backtest', self.start_date, self.finish_date]
                         # ['jesse-tk', 'backtest', self.start_date, self.finish_date, '--hp', hps])
                         # 'jesse-tk backtest ' + self.start_date + ' ' + self.finish_date + ' --hp "' + hps + '"'
-                        
-                        
+
+
                     index += 1
                     iters -= 1
-                    
+
             # print(commands)
             # sleep(5)
             # processes = [Popen(cmd, shell=True, stdout=PIPE) for cmd in commands]
             # process = Popen(['jesse-tk', 'backtest', '2021-08-17', '2021-10-25', '--hp', hps], stdout=PIPE)
             processes = [Popen(cmd, shell=True, stdout=PIPE) for cmd in commands]
-            
+
             # wait for completion
             for p in processes:
                 p.wait()
@@ -117,7 +117,7 @@ class Refine:
                 # Map console output to a dict
                 metric = utils.get_metrics3(output.decode('utf-8'))
                 metric['dna'] =  metric['seq_hps']
-                
+
                 print('Metrics decoded', len(metric))
 
                 if metric not in results:
@@ -126,7 +126,7 @@ class Refine:
                 sorted_results_prelist = sorted(results, key=lambda x: float(x['calmar']), reverse=True)
                 # print(f'Sorted results: {sorted_results_prelist}')
                 # print('Sorted results', len(sorted_results_prelist))
-                
+
                 # sleep(10)
                 self.sorted_results = []
 
@@ -141,7 +141,7 @@ class Refine:
 
                 eta = ((timer() - start) / index) * (self.n_of_params - index)
                 eta_formatted = strftime("%H:%M:%S", gmtime(eta))
-                
+
                 print(
                     f'{index}/{self.n_of_params}\teta: {eta_formatted} | {self.pair} '
                     f'| {self.timeframe} | {self.start_date} -> {self.finish_date}')
@@ -155,11 +155,12 @@ class Refine:
 
         # self.save_seq(self.sorted_results)
 
-        candidates = {}
+        candidates = {
+            r['dna']: r['dna']
+            for r in self.sorted_results
+            if r['max_dd'] > self.dd
+        }
 
-        for r in self.sorted_results:
-            if r['max_dd'] > self.dd:
-                candidates[r['dna']] = r['dna']
 
         with open(f'SEQ-{self.pair}-{self.strategy}-{self.start_date}-{self.finish_date}.py', 'w') as f:
             f.write("hps = ")
