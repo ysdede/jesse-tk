@@ -18,9 +18,17 @@ from dateutil.parser import isoparse
 import psycopg2
 import urllib
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from dateutil.tz import UTC
 from jesse.config import config
+
+def add_days(date: str, days: int):
+    """Add days to a ISO formatted date string"""
+    return (datetime.strptime(date, '%Y-%m-%d') + timedelta(days=days)).strftime('%Y-%m-%d')
+
+def sub_days(date: str, days: int):
+    """Subtract days from a ISO formatted date string"""
+    return (datetime.strptime(date, '%Y-%m-%d') - timedelta(days=days)).strftime('%Y-%m-%d')
 
 def get_symbols_list(exchange: str = 'Binance Futures', quote_asset: str = 'USDT') -> list:
     local_fn = f"{exchange.replace(' ', '')}ExchangeInfo.json"

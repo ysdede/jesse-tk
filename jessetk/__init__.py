@@ -174,7 +174,7 @@ def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: in
     help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
 @click.option(
     '--dd', default=-90, show_default=True,
-    help='Maximum drawdown limit for filtering results.')
+    help='Maximum drawdown limit for filtering results. Use negative values.')
 @click.option('--full-reports/--no-full-reports', default=False,
               help="Generates QuantStats' HTML output with metrics reports like Sharpe ratio, Win rate, Volatility, etc., and batch plotting for visualizing performance, drawdowns, rolling statistics, monthly returns, etc.")
 def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: int, dd: int, full_reports) -> None:
@@ -864,7 +864,7 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     # register_custom_exception_handler()
     # debug flag
     config['app']['debug_mode'] = debug
-
+    
     # fee flag
     if not fee:
         for e in config['app']['trading_exchanges']:
