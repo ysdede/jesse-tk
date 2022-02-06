@@ -70,15 +70,12 @@ def get_symbols_list(exchange: str = 'Binance Futures', quote_asset: str = 'USDT
             blvt  = 'LEVERAGED' in sym['permissions']
         except:
             pass        
-        
+
         if sym['quoteAsset'] == quote_asset and not blvt and sym['status'] != 'BREAK':
             # print(f"{sym['baseAsset']}-{quote_asset}")
             symbols.append(f"{sym['baseAsset']}-{quote_asset}")
 
-    if symbols:
-        return symbols
-    else:
-        return None
+    return symbols or None
 
 def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures') -> list:
     symbols_list = None
