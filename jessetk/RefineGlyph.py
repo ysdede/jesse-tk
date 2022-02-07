@@ -85,9 +85,9 @@ class Refine:
                         f"jesse-tk backtest {self.start_date} {self.finish_date} --gly {dna}")
                     index += 1
                     iters -= 1
-                    
+
             print(commands)
-            
+
             processes = [Popen(cmd, shell=True, stdout=PIPE) for cmd in commands]
             # wait for completion
             for p in processes:
@@ -110,13 +110,14 @@ class Refine:
 
                 sorted_results_prelist = sorted(results, key=lambda x: float(x['sharpe']), reverse=True)
                 print('Sorted results', len(sorted_results_prelist))
-                
+
                 self.sorted_results = []
 
                 if self.eliminate:
-                    for r in sorted_results_prelist:
-                        if float(r['sharpe']) > 0:
-                            self.sorted_results.append(r)
+                    self.sorted_results.extend(
+                        r for r in sorted_results_prelist if float(r['sharpe']) > 0
+                    )
+
                 else:
                     self.sorted_results = sorted_results_prelist
 
@@ -219,7 +220,7 @@ class Refine:
         print(
             Vars.refine_console_formatter.format(*Vars.refine_console_header2))
 
-        for r in self.sorted_results[0:25]:
+        for r in self.sorted_results[:25]:
             print(
                 Vars.refine_console_formatter.format(
                     r['dna'],
