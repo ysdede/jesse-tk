@@ -4,7 +4,7 @@
 You need to install the legacy version of the jesse.
 
 #### Linux:  
-Use: [jesse stack installer](https://github.com/ysdede/stack-installer/blob/master/ubuntu-20.04.sh)
+Use: [jesse stack installer](https://github.com/ysdede/stack-installer/blob/master/jesse-cli-ubuntu20.sh)
 
 it will install modified version of legacy jesse cli.
 ```console
