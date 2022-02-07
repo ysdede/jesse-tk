@@ -4,7 +4,7 @@
 You need to install the legacy version of the jesse.
 
 #### Linux:  
-Use: [https://github.com/ysdede/stack-installer/blob/master/ubuntu-20.04.sh](jesse stack installer)
+Use: [jesse stack installer](https://github.com/ysdede/stack-installer/blob/master/ubuntu-20.04.sh)
 
 it will install modified version of legacy jesse cli.
 ```console
@@ -22,13 +22,13 @@ pip install -e git+https://github.com/ysdede/jesse-tk.git#egg=jesse-tk
 ```
 
 #### Windows:
-  Download and install prebuilt ta-lib from (https://www.lfd.uci.edu/~gohlke/pythonlibs/)](https://www.lfd.uci.edu/~gohlke/pythonlibs/)
+  Download and install prebuilt ta-lib from [https://www.lfd.uci.edu/~gohlke/pythonlibs/](https://www.lfd.uci.edu/~gohlke/pythonlibs/)
 
   ```console
     pip install downloaded wheel file
  ```
 
-install legacy jesse cli from https://github.com/ysdede/jesse
+install legacy jesse cli from [https://github.com/ysdede/jesse](https://github.com/ysdede/jesse)
 
 Clone this repository and install with pip.
 ```console
