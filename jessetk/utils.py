@@ -22,6 +22,41 @@ from datetime import datetime, timedelta
 from dateutil.tz import UTC
 from jesse.config import config
 
+def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures') -> list:
+    symbols_list = None
+    date = isoparse(start_date + 'T00:00:00+00:00').astimezone(UTC)
+    epoch = int(date.timestamp() * 1000)
+    
+    db_name = config['env']['databases']['postgres_name']
+    db_user = config['env']['databases']['postgres_username']
+    db_pass = config['env']['databases']['postgres_password']
+    db_host = config['env']['databases']['postgres_host']
+    db_port = config['env']['databases']['postgres_port']
+
+    try:
+        conn = psycopg2.connect(
+            database=db_name, user=db_user, password=db_pass, host=db_host, port=db_port
+        )
+
+        cursor = conn.cursor()
+        query = f"select symbol from public.candle where exchange = '{exchange}' and timestamp = {epoch} group by symbol;"
+        cursor.execute(query)
+        symbols = cursor.fetchall()
+        symbols_list = [x[0] for x in symbols]
+        
+    except (Exception, psycopg2.Error) as error:
+        print("Error while fetching data from PostgreSQL", error)
+        return []
+
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+        if symbols_list:
+            return symbols_list
+        else:
+            return []
+
 def add_days(date: str, days: int):
     """Add days to a ISO formatted date string"""
     return (datetime.strptime(date, '%Y-%m-%d') + timedelta(days=days)).strftime('%Y-%m-%d')
