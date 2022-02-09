@@ -10,7 +10,6 @@ import click
 import jesse.helpers as jh
 from jesse.config import config
 from jesse.helpers import get_config
-from jesse.modes import backtest_mode
 from jesse.routes import router
 from jesse.services import db
 from jesse.services.selectors import get_exchange
@@ -806,7 +805,6 @@ def score() -> None:
     run()
 
 
-# ///
 @cli.command()
 @click.argument('start_date', required=True, type=str)
 @click.argument('finish_date', required=True, type=str)
@@ -814,15 +812,9 @@ def testpairs(start_date: str, finish_date: str) -> None:
     """
     backtest all candidate pairs. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
-
-    # print in yellow color not implemented yet
-    print('\x1b[33mNot implemented yet. Use old tool jesse-picker testpairs\x1b[0m')
-    exit()
-
     os.chdir(os.getcwd())
     validate_cwd()
 
-    # from jessepicker.testpairs import run
     from jessetk.testpairs import run
     validateconfig()
     makedirs()
@@ -857,7 +849,7 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     """
     backtest mode. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
-    print('1')
+    from jesse.modes import backtest_mode
     validate_cwd()
 
     config['app']['trading_mode'] = 'backtest'
