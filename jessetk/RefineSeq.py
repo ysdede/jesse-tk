@@ -18,6 +18,7 @@ from jessetk import utils, print_initial_msg, clear_console
 from jessetk.Vars import datadir
 from jessetk.Vars import refine_file_header
 import json
+from millify import millify
 
 
 class Refine:
@@ -118,7 +119,7 @@ class Refine:
                 metric = utils.get_metrics3(output.decode('utf-8'))
                 metric['dna'] =  metric['seq_hps']
 
-                print('Metrics decoded', len(metric))
+                # print('Metrics decoded', len(metric))
 
                 if metric not in results:
                     results.append(deepcopy(metric))
@@ -195,27 +196,46 @@ class Refine:
             Vars.refine_console_formatter.format(*Vars.refine_console_header2))
 
         for r in self.sorted_results[:25]:
+            
+            p = {}
+            # make a copy of r dict but round values if they are floats
+            for k, v in r.items():
+                if type(v) is float and v > 999999:
+                    p[k] = millify(v, 2)
+                elif type(v) is float and abs(v) > 999:
+                    p[k] = round(v)
+                else:
+                    p[k] = v
+
+            # for i in range(len(r)):
+            #     if isinstance(r[i], float) and r[i] > 999999:
+            #         p.append(millify(round(r[i]), 2))  # '{:.2f}'.format(r[i])
+            #     # elif isinstance(r[i], float) and r[i] > 1000:
+            #     #     p.append(round(r[i], 2))
+            #     else:
+            #         p.append(r[i])
+
             print(
                 Vars.refine_console_formatter.format(
-                    r['dna'],
-                    r['total_trades'],
-                    r['n_of_longs'],
-                    r['n_of_shorts'],
-                    r['total_profit'],
-                    r['max_dd'],
-                    r['annual_return'],
-                    r['win_rate'],
-                    r['serenity'],
-                    r['sharpe'],
-                    r['calmar'],
-                    r['win_strk'],
-                    r['lose_strk'],
-                    r['largest_win'],
-                    r['largest_lose'],
-                    r['n_of_wins'],
-                    r['n_of_loses'],
-                    r['paid_fees'],
-                    r['market_change']))
+                    p['dna'],
+                    p['total_trades'],
+                    p['n_of_longs'],
+                    p['n_of_shorts'],
+                    p['total_profit'],
+                    p['max_dd'],
+                    p['annual_return'],
+                    p['win_rate'],
+                    p['serenity'],
+                    p['sharpe'],
+                    p['calmar'],
+                    p['win_strk'],
+                    p['lose_strk'],
+                    p['largest_win'],
+                    p['largest_lose'],
+                    p['n_of_wins'],
+                    p['n_of_loses'],
+                    p['paid_fees'],
+                    p['market_change']))
 
     def save_dnas(self, sorted_results, dna_fn=None):
 
