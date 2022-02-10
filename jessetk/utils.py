@@ -101,17 +101,16 @@ def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures
             conn.close()
         return symbols_list or []
 
-def hp_to_seq(rounded_params):
+def hp_to_seq(hp):
     longest_param = 0
-    
-    for v in rounded_params.values():
-         # use max() instead?
-        #  longest_param = max(longest_param, len(str(v)))
-        if len(str(v)) > longest_param: 
+
+    for v in hp.values():
+        if len(str(v)) > longest_param:
             longest_param = len(str(v))
-    
-    hash = ''.join([f'{value:0>{longest_param}}' for key, value in rounded_params.items()])
-    return f'{hash}{longest_param}'
+            
+    hash = ''.join([f'{value:0>{longest_param}}' for key, value in hp.items()])
+    return f"{hash}{longest_param}"
+
 
 def decode_seq(seq):
     # Get the sequence width from the last char
