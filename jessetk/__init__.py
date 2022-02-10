@@ -1,3 +1,4 @@
+from email.policy import default
 import os
 import sys
 from copy import deepcopy
@@ -8,27 +9,13 @@ from timeit import default_timer as timer
 
 import click
 import jesse.helpers as jh
-from jesse.config import config
-from jesse.helpers import get_config
-from jesse.modes import backtest_mode
-from jesse.routes import router
 from jesse.services import db
 from jesse.services.selectors import get_exchange
-from jesse.services import report
 import json as json_lib
 from jessetk import Vars, randomwalk, utils
 from jessetk.Vars import (Metrics, initial_test_message, random_console_formatter,
                           random_file_header, refine_file_header)
 from jessetk.utils import clear_console, hp_to_seq
-
-# # Python version validation.
-# if jh.python_version() < 3.7:
-#     print(
-#         jh.color(
-#             f'Jesse requires Python version above 3.7. Yours is {jh.python_version()}',
-#             'red'
-#         )
-#     )
 
 # fix directory issue
 sys.path.insert(0, os.getcwd())
@@ -56,7 +43,6 @@ def inject_local_routes() -> None:
     router.set_routes(local_router.routes)
     router.set_extra_candles(local_router.extra_candles)
 
-
 # inject local files
 if is_jesse_project:
     inject_local_config()
@@ -83,6 +69,22 @@ def validate_cwd() -> None:
 @click.group()
 def cli() -> None:
     pass
+
+
+@cli.command()
+@click.argument('treshold1', required=False, type=float, default=0.001)
+@click.argument('treshold2', required=False, type=float, default=-59.0)
+def optuna_pick(treshold1: float, treshold2:float) -> None:
+    
+    os.chdir(os.getcwd())
+    validate_cwd()
+
+    print(f"treshold1: {treshold1}")
+    print(f"treshold2: {treshold2}")
+
+    from jessetk.OptunaPick import OptunaPick
+    op = OptunaPick(t1=treshold1, t2=treshold2)
+    op.dump_best_parameters()
 
 
 @cli.command()
@@ -806,7 +808,6 @@ def score() -> None:
     run()
 
 
-# ///
 @cli.command()
 @click.argument('start_date', required=True, type=str)
 @click.argument('finish_date', required=True, type=str)
@@ -814,15 +815,9 @@ def testpairs(start_date: str, finish_date: str) -> None:
     """
     backtest all candidate pairs. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
-
-    # print in yellow color not implemented yet
-    print('\x1b[33mNot implemented yet. Use old tool jesse-picker testpairs\x1b[0m')
-    exit()
-
     os.chdir(os.getcwd())
     validate_cwd()
 
-    # from jessepicker.testpairs import run
     from jessetk.testpairs import run
     validateconfig()
     makedirs()
@@ -857,7 +852,9 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     """
     backtest mode. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
-    print('1')
+    from jesse.config import config
+    from jesse.routes import router
+    from jesse.modes import backtest_mode
     validate_cwd()
 
     config['app']['trading_mode'] = 'backtest'

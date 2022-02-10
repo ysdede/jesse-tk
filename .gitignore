@@ -101,6 +101,7 @@ parts/
 sdist/
 var/
 wheels/
+testvenv/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
