@@ -1,3 +1,4 @@
+from email.policy import default
 import os
 import sys
 from copy import deepcopy
@@ -42,7 +43,6 @@ def inject_local_routes() -> None:
     router.set_routes(local_router.routes)
     router.set_extra_candles(local_router.extra_candles)
 
-
 # inject local files
 if is_jesse_project:
     inject_local_config()
@@ -69,6 +69,22 @@ def validate_cwd() -> None:
 @click.group()
 def cli() -> None:
     pass
+
+
+@cli.command()
+@click.argument('treshold1', required=False, type=float, default=0.001)
+@click.argument('treshold2', required=False, type=float, default=-59.0)
+def optuna_pick(treshold1: float, treshold2:float) -> None:
+    
+    os.chdir(os.getcwd())
+    validate_cwd()
+
+    print(f"treshold1: {treshold1}")
+    print(f"treshold2: {treshold2}")
+
+    from jessetk.OptunaPick import OptunaPick
+    op = OptunaPick(t1=treshold1, t2=treshold2)
+    op.dump_best_parameters()
 
 
 @cli.command()
