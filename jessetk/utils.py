@@ -2,17 +2,11 @@ import base64
 import os
 from multiprocessing import cpu_count
 from subprocess import PIPE, Popen
-from time import sleep
 
 from jesse.helpers import convert_number
-
 import jessetk.Vars
 from jessetk.Vars import (random_console_formatter, random_console_header1,
                           random_console_header2)
-from jesse.routes import router
-import jesse.helpers as jh
-# from emoji_list_new import emojis
-from jessetk.emoji_list_new import emojis
 
 from dateutil.parser import isoparse
 import psycopg2
@@ -20,42 +14,6 @@ import urllib
 import json
 from datetime import datetime, timedelta
 from dateutil.tz import UTC
-from jesse.config import config
-
-def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures') -> list:
-    symbols_list = None
-    date = isoparse(start_date + 'T00:00:00+00:00').astimezone(UTC)
-    epoch = int(date.timestamp() * 1000)
-    
-    db_name = config['env']['databases']['postgres_name']
-    db_user = config['env']['databases']['postgres_username']
-    db_pass = config['env']['databases']['postgres_password']
-    db_host = config['env']['databases']['postgres_host']
-    db_port = config['env']['databases']['postgres_port']
-
-    try:
-        conn = psycopg2.connect(
-            database=db_name, user=db_user, password=db_pass, host=db_host, port=db_port
-        )
-
-        cursor = conn.cursor()
-        query = f"select symbol from public.candle where exchange = '{exchange}' and timestamp = {epoch} group by symbol;"
-        cursor.execute(query)
-        symbols = cursor.fetchall()
-        symbols_list = [x[0] for x in symbols]
-        
-    except (Exception, psycopg2.Error) as error:
-        print("Error while fetching data from PostgreSQL", error)
-        return []
-
-    finally:
-        if conn:
-            cursor.close()
-            conn.close()
-        if symbols_list:
-            return symbols_list
-        else:
-            return []
 
 def add_days(date: str, days: int):
     """Add days to a ISO formatted date string"""
@@ -113,6 +71,7 @@ def get_symbols_list(exchange: str = 'Binance Futures', quote_asset: str = 'USDT
     return symbols or None
 
 def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures') -> list:
+    from jesse.config import config
     symbols_list = None
     date = isoparse(f'{start_date}T00:00:00+00:00').astimezone(UTC)
     epoch = int(date.timestamp() * 1000)
@@ -161,32 +120,6 @@ def decode_seq(seq):
     seq = seq[:-1]
     return [seq[i:i+width] for i in range(0, len(seq), width)]
 
-
-def decode_glyphs(emoji):
-    r = router.routes[0]
-    StrategyClass = jh.get_strategy_class(r.strategy_name)
-    r.strategy = StrategyClass()
-    hp = {}
-    # reverse_emojis = dict(zip(emojis.values(),emojis.keys()))
-    print(r.strategy.hyperparameters(), emoji)
-            
-    for p, e in zip(r.strategy.hyperparameters(), emoji):
-            # r.strategy.hyperparameters()[p] = hp[p]
-            # hp_new[p['name']] = hp[p]
-            # print(p['name'], p['default'])
-            for i in emojis:
-                # print(i[0], i[1], e)
-                if i[1] == e:
-                    hp[p['name']] = i[0]
-                    print(p['name'], i[0])
-                    break
-            
-            # print(reverse_emojis['😒'])
-            # print(e, 'e')
-            # print(p , reverse_emojis[e])
-            # hp[p['name']] = reverse_emojis[e]
-    return hp
-            
 
 def hp_to_dna(strategy_hp, hps):    # TODO - make it work with floats too
     """Returns DNA code from HP parameters
