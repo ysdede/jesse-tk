@@ -8,26 +8,13 @@ from timeit import default_timer as timer
 
 import click
 import jesse.helpers as jh
-from jesse.config import config
-from jesse.helpers import get_config
-from jesse.routes import router
 from jesse.services import db
 from jesse.services.selectors import get_exchange
-from jesse.services import report
 import json as json_lib
 from jessetk import Vars, randomwalk, utils
 from jessetk.Vars import (Metrics, initial_test_message, random_console_formatter,
                           random_file_header, refine_file_header)
 from jessetk.utils import clear_console, hp_to_seq
-
-# # Python version validation.
-# if jh.python_version() < 3.7:
-#     print(
-#         jh.color(
-#             f'Jesse requires Python version above 3.7. Yours is {jh.python_version()}',
-#             'red'
-#         )
-#     )
 
 # fix directory issue
 sys.path.insert(0, os.getcwd())
@@ -849,6 +836,8 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     """
     backtest mode. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
+    from jesse.config import config
+    from jesse.routes import router
     from jesse.modes import backtest_mode
     validate_cwd()
 
