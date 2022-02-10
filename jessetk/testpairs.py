@@ -4,10 +4,12 @@ from subprocess import Popen, PIPE
 from time import gmtime
 from time import strftime
 from timeit import default_timer as timer
-
 from jesse.routes import router
+from jessetk.utils import avail_pairs
+from millify import millify
+from copy import deepcopy
 
-jessepickerdir = 'jessepickerdata'
+jessetkdir = 'jessetkdata'
 anchor = 'ANCHOR!'
 
 
@@ -90,18 +92,18 @@ def getmetrics(_pair, _tf, _dna, metrics, _startdate, _enddate):
             # print('Total closed:', a)
 
         if 'Total Net Profit' in line:
-            a = split(line)
+            a = float(split(line))
             metr.append(a)
             # print('Net Profit:', a)
 
         if 'Max Drawdown' in line:
-            a = split(line)
+            a = float(split(line))
             metr.append(a)
             # print('Max Drawdown:', a)
 
         if 'Annual Return' in line:
             a = float(split(line))
-            metr.append(round(a))
+            metr.append(a)
             # print('Annual Return:', a)
 
         if 'Percent Profitable' in line:
@@ -110,17 +112,17 @@ def getmetrics(_pair, _tf, _dna, metrics, _startdate, _enddate):
             # print('Percent Profitable:', a)
 
         if 'Sharpe Ratio' in line:
-            a = split(line)
+            a = float(split(line))
             metr.append(a)
             # print('Sharpe Ratio:', a)
 
         if 'Calmar Ratio' in line:
-            a = split(line)
+            a = float(split(line))
             metr.append(a)
             # print('Calmar Ratio:', a)
 
         if 'Serenity Index' in line:
-            a = split(line)
+            a = float(split(line))
             metr.append(a)
             # print('Serenity:', a)
 
@@ -168,7 +170,7 @@ def runtest(_start_date, _finish_date, _pair, _tf, symbol):
     res = "Aborted!"
     res = output.decode('utf-8', errors='ignore')
     # print(res)
-    return getmetrics(_pair, _tf, symbol, res, _start_date, _finish_date)
+    return getmetrics(_pair, _tf, 'X', res, _start_date, _finish_date)
 
 
 def signal_handler(sig, frame):
@@ -206,7 +208,7 @@ def run(_start_date, _finish_date):
                'Index', 'Ratio', 'Ratio', 'Streak', 'Streak', 'Win. Trade', 'Los. Trade', 'Trades', 'Trades',
                'Change %']
 
-    formatter = '{: <10} {: <5} {: <12} {: <12} {: <12} {: <6} {: <12} {: <8} {: <10} {: <8} {: <8} {: <12} {: <10} {: <8} {: <8} ' \
+    formatter = '{: <14} {: <5} {: <4} {: <12} {: <12} {: <6} {: <12} {: <8} {: <10} {: <8} {: <8} {: <12} {: <10} {: <8} {: <8} ' \
                 '{: <12} {: <12} {: <10} {: <10} {: <12}'
 
     clearConsole = lambda: os.system('cls' if os.name in ('nt', 'dos') else 'clear')
@@ -215,8 +217,8 @@ def run(_start_date, _finish_date):
 
     filename = f'Pairs-{exchange}-{timeframe}--{_start_date}--{_finish_date}'
 
-    reportfilename = f'{jessepickerdir}/results/{filename}--{ts}.csv'
-    logfilename = f'{jessepickerdir}/logs/{filename}--{ts}.log'
+    reportfilename = f'{jessetkdir}/results/{filename}--{ts}.csv'
+    logfilename = f'{jessetkdir}/logs/{filename}--{ts}.log'
     f = open(logfilename, 'w', encoding='utf-8')
     f.write(str(headerforfiles) + '\n')
 
@@ -225,35 +227,43 @@ def run(_start_date, _finish_date):
     # Read routes.py as template
     global routes_template
     routes_template = read_file('routes.py')
-    pairs_list = None
+    # pairs_list = None
+
+    # try:
+    #     import jessepicker.pairs
+    # except:
+    #     print('Can not import pairs!')
+    #     exit()
+
+    # if exchange == 'Binance Futures':
+    #     pairs_list = jessepicker.pairs.binance_perp_pairs
+    #     print('Binance Futures all symbols')
+
+    # elif exchange == 'Binance':
+    #     pairs_list = jessepicker.pairs.binance_spot_pairs
+    #     print('Binance Spot symbols')
+
+    # elif exchange == 'FTX Futures':
+    #     pairs_list = jessepicker.pairs.ftx_perp_pairs
+    #     print('FTX Futures all symbols!')
+    # else:
+    #     print('Unsupported exchange or broken routes file! Exchange = ', exchange)
+    #     exit()
+
+    # if not pairs_list:
+    #     print('pairs_list is empty!')
+    #     exit()
+
+    pairs_list = avail_pairs(_start_date, exchange)
 
     try:
-        import jessepicker.pairs
+        num_of_pairs = len(pairs_list)
     except:
-        print('Can not import pairs!')
+        print('Can not get pairs list!')
         exit()
 
-    if exchange == 'Binance Futures':
-        pairs_list = jessepicker.pairs.binance_perp_pairs
-        print('Binance Futures all symbols')
-
-    elif exchange == 'Binance':
-        pairs_list = jessepicker.pairs.binance_spot_pairs
-        print('Binance Spot symbols')
-
-    elif exchange == 'FTX Futures':
-        pairs_list = jessepicker.pairs.ftx_perp_pairs
-        print('FTX Futures all symbols!')
-    else:
-        print('Unsupported exchange or broken routes file! Exchange = ', exchange)
-        exit()
-
-    if not pairs_list:
-        print('pairs_list is empty!')
-        exit()
-
-    num_of_pairs = len(pairs_list)
-
+    print(pairs_list)
+    print('Number of pairs:', num_of_pairs)
     start = timer()
 
     for index, pair in enumerate(pairs_list, start=1):
@@ -268,7 +278,7 @@ def run(_start_date, _finish_date):
 
         f.write(str(ress) + '\n')
         f.flush()
-        sortedresults = sorted(results, key=lambda x: float(x[12]), reverse=True)
+        sortedresults = sorted(results, key=lambda x: float(x[10]), reverse=True)
 
         clearConsole()
         rt = ((timer() - start) / index) * (num_of_pairs - index)
@@ -279,11 +289,18 @@ def run(_start_date, _finish_date):
             formatter.format(*header1))
         print(
             formatter.format(*header2))
-        topresults = sortedresults[0:30]
+        topresults = sortedresults[0:40]
         # print(topresults)
         for r in topresults:
+            p = []
+            for i in range(len(r)):
+                if isinstance(r[i], float) and r[i] > 999999:
+                    p.append(millify(round(r[i]), 2))  # '{:.2f}'.format(r[i])
+                else:
+                    p.append(r[i])
             print(
-                formatter.format(*r))
+                formatter.format(*p))
+
         delta = timer() - start
 
     # Restore routes.py
@@ -298,12 +315,12 @@ def run(_start_date, _finish_date):
     f = open(reportfilename, 'w', encoding='utf-8')
     f.write(str(headerforfiles).replace('[', '').replace(']', '').replace(' ', '') + '\n')
     for srline in sortedresults:
-        f.write(str(srline).replace('[', '').replace(']', '').replace(' ', '') + '\n')
+        f.write(str(srline).replace('[', '').replace(']', '').replace(' ', '').replace(',', '\t') + '\n')  # TODO: You have better csv exporter use it!
     os.fsync(f.fileno())
     f.close()
 
     # Rewrite dnas.py, sorted by calmar
-    symbol_fn = f'{jessepickerdir}/pairfiles/{pair} {_start_date} {_finish_date}.py'
+    symbol_fn = f'{jessetkdir}/pairfiles/{pair} {_start_date} {_finish_date}.py'
     if os.path.exists(symbol_fn):
         os.remove(symbol_fn)
 
