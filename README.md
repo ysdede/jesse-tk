@@ -1,4 +1,5 @@
 # Jesse Toolkit
+[![Sourcery](https://img.shields.io/badge/Sourcery-enabled-brightgreen)](https://sourcery.ai)
 ### Installation
 
 You need to install the legacy version of the jesse.
