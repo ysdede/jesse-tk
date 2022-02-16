@@ -163,8 +163,8 @@ def getmetrics(_pair, _tf, _dna, metrics, _startdate, _enddate):
     return metr
 
 
-def runtest(_start_date, _finish_date, _pair, _tf, symbol):
-    process = Popen(['jesse', 'backtest', _start_date, _finish_date], stdout=PIPE)  # , '--full-reports'
+def runtest(_start_date, _finish_date, _pair, _tf, symbol, fr):
+    process = Popen(['jesse', 'backtest', _start_date, _finish_date, fr], stdout=PIPE)  # , '--full-reports'
     (output, err) = process.communicate()
     exit_code = process.wait()
     res = "Aborted!"
@@ -182,7 +182,8 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
-def run(_start_date, _finish_date):
+def run(_start_date, _finish_date, full_reports):
+    fr = '--full-reports' if full_reports else ''
     import signal
 
     signal.signal(signal.SIGINT, signal_handler)
@@ -271,7 +272,7 @@ def run(_start_date, _finish_date):
 
         # Run jesse backtest and grab console output
         ress = []
-        ress = runtest(_start_date=_start_date, _finish_date=_finish_date, _pair=pair, _tf=timeframe, symbol=pair)
+        ress = runtest(_start_date=_start_date, _finish_date=_finish_date, _pair=pair, _tf=timeframe, symbol=pair, fr=fr)
 
         if ress not in results:
             results.append(ress)
