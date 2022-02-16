@@ -1,10 +1,7 @@
-from email.policy import default
 import os
 import sys
-from copy import deepcopy
 from multiprocessing import cpu_count
 from pydoc import locate
-from time import gmtime, sleep, strftime
 from timeit import default_timer as timer
 
 import click
@@ -12,10 +9,8 @@ import jesse.helpers as jh
 from jesse.services import db
 from jesse.services.selectors import get_exchange
 import json as json_lib
-from jessetk import Vars, randomwalk, utils
-from jessetk.Vars import (Metrics, initial_test_message, random_console_formatter,
-                          random_file_header, refine_file_header)
-from jessetk.utils import clear_console, hp_to_seq
+from jessetk import utils
+from jessetk.Vars import initial_test_message
 
 # fix directory issue
 sys.path.insert(0, os.getcwd())
@@ -206,40 +201,6 @@ def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu:
                max_cpu, dd=dd, full_reports=full_reports)
     r.run()
 
-# @cli.command()
-# @click.argument('dna_file', required=True, type=str)
-# @click.argument('start_date', required=True, type=str)
-# @click.argument('finish_date', required=True, type=str)
-# @click.option('--eliminate/--no-eliminate', default=False,
-#               help='Remove worst performing dnas at every iteration.')
-# @click.option(
-#     '--cpu', default=0, show_default=True,
-#     help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
-# def refine_gly(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: int) -> None:
-#     """
-#     backtest all candidate dnas. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
-#     """
-#     os.chdir(os.getcwd())
-#     validate_cwd()
-#     validateconfig()
-#     makedirs()
-
-#     if not eliminate:
-#         eliminate = False
-
-#     if cpu > cpu_count():
-#         raise ValueError(
-#             f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
-#     elif cpu == 0:
-#         max_cpu = cpu_count()
-#     else:
-#         max_cpu = cpu
-#     print('CPU:', max_cpu)
-
-#     from jessetk.RefineGlyph import Refine
-#     r = Refine(dna_file, start_date, finish_date, eliminate, max_cpu)
-#     r.run()
-
 
 @cli.command()
 @click.argument('start_date', required=True, type=str)
@@ -296,10 +257,6 @@ def import_routes(start_date: str) -> None:
     except:
         sd = str(datetime.date.today() - datetime.timedelta(days=2))
         print('Falling-back to two days earlier. Given parameter:', start_date)
-
-    # os.chdir(os.getcwd())
-    # validate_cwd()
-    # validateconfig()
 
     try:
         from jesse.config import config
@@ -811,7 +768,9 @@ def score() -> None:
 @cli.command()
 @click.argument('start_date', required=True, type=str)
 @click.argument('finish_date', required=True, type=str)
-def testpairs(start_date: str, finish_date: str) -> None:
+@click.option('--full-reports/--no-full-reports', default=False,
+              help="Generates QuantStats' HTML output with metrics reports like Sharpe ratio, Win rate, Volatility, etc., and batch plotting for visualizing performance, drawdowns, rolling statistics, monthly returns, etc.")
+def testpairs(start_date: str, finish_date: str, full_reports: bool) -> None:
     """
     backtest all candidate pairs. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
     """
@@ -821,7 +780,7 @@ def testpairs(start_date: str, finish_date: str) -> None:
     from jessetk.testpairs import run
     validateconfig()
     makedirs()
-    run(_start_date=start_date, _finish_date=finish_date)
+    run(_start_date=start_date, _finish_date=finish_date, full_reports=full_reports)
 
 
 @cli.command()
@@ -915,10 +874,6 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
             for p, val in zip(r.strategy.hyperparameters(), seq_encoded)
         }
 
-
-        # hp_new.update(hp)
-        # print('New hp:', hp_new)
-        # r.strategy.hp = hp_new
         print(f'SEQ: {seq} -> {hp_new}')
 
     hp_dict = None
@@ -928,59 +883,6 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
         hp_dict = json_lib.loads(hp.replace("'", '"').replace('%', '"'))
         hp_new = {p['name']: hp_dict[p['name']] for p in r.strategy.hyperparameters()}
 
-            # hp_new.update(hp)
-            # print('New hp:', hp_new)
-            # print(f'Json HP: {hp} -> {hp_new}')
-
-    # <-------------------------------
-
-    # Inject Seq payload to route ->
-    # if seq != 'None':
-    #     print('Seq to decode:', seq)
-    #     seq_encoded = utils.decode_seq(seq)
-
-    #     for r in router.routes:
-    #         StrategyClass = jh.get_strategy_class(r.strategy_name)
-    #         r.strategy = StrategyClass()
-
-    #         hp_new = {}
-
-    #         for p, val in zip(r.strategy.hyperparameters(), seq_encoded):
-    #             # r.strategy.hyperparameters()[p] = hp[p]
-    #             # hp_new[p['name']] = hp[p]
-    #             # print(p['name'], p['default'])
-    #             hp_new[p['name']] = int(val)
-    #         # hp_new.update(hp)
-    #         # print('New hp:', hp_new)
-    #         # r.strategy.hp = hp_new
-    #         print('New hp:', hp_new)
-    #         # sleep(5)
-    # # <-------------------------------
-    # Inject payload HP to route
-    # refactor this shit
-    # for r in router.routes:
-    #     # print(r)
-    #     StrategyClass = jh.get_strategy_class(r.strategy_name)
-    #     r.strategy = StrategyClass()
-    #     if hp != 'None':
-    #         print('Payload: ', hp, 'type:', type(hp))
-
-    #         hp_dict = json_lib.loads(hp.replace("'", '"').replace('%', '"'))
-
-    #         print('Old hp:', r.strategy.hyperparameters())
-    #         hp_new = {}
-
-    #         for p in r.strategy.hyperparameters():
-    #             # r.strategy.hyperparameters()[p] = hp[p]
-    #             # hp_new[p['name']] = hp[p]
-    #             # print(p['name'], p['default'])
-    #             hp_new[p['name']] = hp_dict[p['name']]
-
-    #         # hp_new.update(hp)
-    #         # print('New hp:', hp_new)
-    #         r.strategy.hp = hp_new
-
-    # backtest_mode._initialized_strategies()
     backtest_mode.run(start_date, finish_date, chart=chart, tradingview=tradingview, csv=csv,
                       json=json, full_reports=full_reports, hyperparameters=hp_new)
 
@@ -996,15 +898,6 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
 
     if routes_dna:
         print('Dna String:        |', routes_dna)
-
-    # try:    # Catch error when there's no trades.
-    #     data = report.portfolio_metrics()
-    #     print(data)
-    #     print('*' * 50)
-    #     print(type(data))
-    #     print(data[0])
-    # except:
-    #     print('No Trades, no metrics!')
 
     db.close_connection()
 
@@ -1025,34 +918,3 @@ def makedirs():
 
 def validateconfig():
     pass
-    # if not (get_config('env.metrics.sharpe_ratio', False) and
-    #         get_config('env.metrics.calmar_ratio', False) and
-    #         get_config('env.metrics.winning_streak', False) and
-    #         get_config('env.metrics.losing_streak', False) and
-    #         get_config('env.metrics.largest_losing_trade', False) and
-    #         get_config('env.metrics.largest_winning_trade', False) and
-    #         get_config('env.metrics.total_winning_trades', False) and
-    #         get_config('env.metrics.total_losing_trades', False)):
-    #     print('Set optional metrics to True in config.py!')
-    #     exit()
-
-# @cli.command()
-# @click.argument('dna_file', required=True, type=str)
-# @click.argument('start_date', required=True, type=str)
-# @click.argument('finish_date', required=True, type=str)
-# @click.argument('eliminate', required=False, type=bool)
-# def refine(dna_file, start_date: str, finish_date: str, eliminate: bool) -> None:
-#     """
-#     backtest all candidate dnas. Enter in "YYYY-MM-DD" "YYYY-MM-DD"
-#     """
-#     os.chdir(os.getcwd())
-#     validate_cwd()
-#     validateconfig()
-#     makedirs()
-
-#     if not eliminate:
-#         eliminate = False
-
-#     from jessetk.refine import refine
-#     r = refine(dna_file, start_date, finish_date, eliminate)
-#     r.run(dna_file, start_date, finish_date)
