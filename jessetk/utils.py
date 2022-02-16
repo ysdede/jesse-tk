@@ -15,24 +15,26 @@ import json
 from datetime import datetime, timedelta
 from dateutil.tz import UTC
 
+
 def add_days(date: str, days: int):
     """Add days to a ISO formatted date string"""
     return (datetime.strptime(date, '%Y-%m-%d') + timedelta(days=days)).strftime('%Y-%m-%d')
+
 
 def sub_days(date: str, days: int):
     """Subtract days from a ISO formatted date string"""
     return (datetime.strptime(date, '%Y-%m-%d') - timedelta(days=days)).strftime('%Y-%m-%d')
 
+
 def get_symbols_list(exchange: str = 'Binance Futures', quote_asset: str = 'USDT') -> list:
     local_fn = f"{exchange.replace(' ', '')}ExchangeInfo.json"
-    urls = {'Binance': 'https://api.binance.com/api/v1/exchangeInfo', 'Binance Futures': 'https://fapi.binance.com/fapi/v1/exchangeInfo'}
-    symbols_list = []
+    urls = {'Binance': 'https://api.binance.com/api/v1/exchangeInfo',
+            'Binance Futures': 'https://fapi.binance.com/fapi/v1/exchangeInfo'}
 
     try:
         with urllib.request.urlopen(urls[exchange]) as url:
             data = json.loads(url.read().decode())
 
-        # save url to file
         if int(data['serverTime']):
             try:
                 with open(local_fn, 'w') as f:
@@ -47,7 +49,8 @@ def get_symbols_list(exchange: str = 'Binance Futures', quote_asset: str = 'USDT
             with open(local_fn) as f:
                 data = json.load(f)
 
-            print(f"Using cached local data from {datetime.utcfromtimestamp(data['serverTime'] / 1000).strftime('%Y-%m-%d %H:%M')}")
+            print(
+                f"Using cached local data from {datetime.utcfromtimestamp(data['serverTime'] / 1000).strftime('%Y-%m-%d %H:%M')}")
         except Exception as e:
             print(f"Error while loading local api data for {exchange}. {e}")
             return None
@@ -60,15 +63,15 @@ def get_symbols_list(exchange: str = 'Binance Futures', quote_asset: str = 'USDT
         # Check if symbol is a leveraged token (UP/DOWN)
 
         try:
-            blvt  = 'LEVERAGED' in sym['permissions']
+            blvt = 'LEVERAGED' in sym['permissions']
         except:
-            pass        
+            pass
 
         if sym['quoteAsset'] == quote_asset and not blvt and sym['status'] != 'BREAK':
-            # print(f"{sym['baseAsset']}-{quote_asset}")
             symbols.append(f"{sym['baseAsset']}-{quote_asset}")
 
     return symbols or None
+
 
 def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures') -> list:
     from jesse.config import config
@@ -83,7 +86,8 @@ def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures
     db_port = config['env']['databases']['postgres_port']
 
     try:
-        conn = psycopg2.connect(database=db_name, user=db_user, password=db_pass, host=db_host, port=db_port)
+        conn = psycopg2.connect(
+            database=db_name, user=db_user, password=db_pass, host=db_host, port=db_port)
 
         cursor = conn.cursor()
         query = f"select symbol from public.candle where exchange = '{exchange}' and timestamp = {epoch} group by symbol;"
@@ -101,21 +105,20 @@ def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures
             conn.close()
         return symbols_list or []
 
+
 def hp_to_seq(hp):
     longest_param = 0
 
     for v in hp.values():
         if len(str(v)) > longest_param:
             longest_param = len(str(v))
-            
+
     hash = ''.join([f'{value:0>{longest_param}}' for key, value in hp.items()])
     return f"{hash}{longest_param}"
 
 
 def decode_seq(seq):
-    # Get the sequence width from the last char
     width = int(seq[-1])
-    # Remove the width from the sequence
     seq = seq[:-1]
     return [seq[i:i+width] for i in range(0, len(seq), width)]
 
@@ -147,6 +150,7 @@ def hp_to_dna(strategy_hp, hps):    # TODO - make it work with floats too
 
 
 def cpu_info(cpu):
+    # TODO: Don't limit max threads
     if cpu > cpu_count():
         raise ValueError(
             f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
@@ -205,10 +209,10 @@ def split(line):
     r = r.replace('(', '')
     return r.replace(',', '')
 
+
 def split_dna_string(line):
     ll = line.split(' ')
     return ll[len(ll) - 1]
-    
 
 
 def split_n_of_longs_shorts(line):
@@ -346,7 +350,7 @@ def get_metrics3(console_output) -> dict:
 
         if 'No trades were made' in line:
             return metrics
-        
+
         if 'InsufficientMargin' in line:
             print(console_output)
             return metrics
@@ -418,13 +422,13 @@ def get_metrics3(console_output) -> dict:
 
         if 'Market Change' in line:
             metrics['market_change'] = round(float(split(line)), 2)
-            
+
         if 'Dna String:' in line:
             metrics['dna'] = split_dna_string(line)
-        
+
         if 'Sequential Hps' in line:
             metrics['seq_hps'] = split(line)
-            
+
     return metrics
 
 
