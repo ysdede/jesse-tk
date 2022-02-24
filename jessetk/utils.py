@@ -158,7 +158,7 @@ def cpu_info(cpu):
         max_cpu = cpu_count()
     else:
         max_cpu = cpu
-    print('Cpu count:', cpu_count(), 'In use:', max_cpu)
+    print('Cpu or Thread count:', cpu_count(), 'In use:', max_cpu)
     return max_cpu
 
 
@@ -271,6 +271,7 @@ def print_random_tops(sr, top_n):
                 r['n_of_longs'],
                 r['n_of_shorts'],
                 r['total_profit'],
+                r['max_margin_ratio'],
                 r['max_dd'],
                 r['annual_return'],
                 r['win_rate'],
@@ -311,6 +312,7 @@ def create_csv_report(sorted_results, filename, header):
                     f"{srl['n_of_longs']}{csvd}"
                     f"{srl['n_of_shorts']}{csvd}"
                     f"{srl['total_profit']}{csvd}"
+                    f"{srl['max_margin_ratio']}{csvd}"
                     f"{srl['max_dd']}{csvd}"
                     f"{srl['annual_return']}{csvd}"
                     f"{srl['win_rate']}{csvd}"
@@ -366,37 +368,37 @@ def get_metrics3(console_output) -> dict:
             metrics['total_trades'] = int(split(line))
 
         if 'Total Net Profit' in line:
-            metrics['total_profit'] = round(float(split(line)), 2)
+            metrics['total_profit'] = round(float(split(line)), 1)
 
         if 'Max Drawdown' in line:
-            metrics['max_dd'] = round(float(split(line)), 2)
+            metrics['max_dd'] = round(float(split(line)), 1)
 
         if 'Total Paid Fees' in line:
-            metrics['paid_fees'] = round(float(split(line)), 2)
+            metrics['paid_fees'] = round(float(split(line)), 1)
 
         if 'Annual Return' in line:
-            metrics['annual_return'] = round(float(split(line)), 2)
+            metrics['annual_return'] = round(float(split(line)))
 
         if 'Percent Profitable' in line:
             metrics['win_rate'] = int(split(line))
 
         if 'Serenity Index' in line:
-            metrics['serenity'] = round(float(split(line)), 2)
+            metrics['serenity'] = round(float(split(line)))
 
         if 'Sharpe Ratio' in line:
-            metrics['sharpe'] = round(float(split(line)), 2)
+            metrics['sharpe'] = round(float(split(line)))
 
         if 'Calmar Ratio' in line:
-            metrics['calmar'] = round(float(split(line)), 2)
+            metrics['calmar'] = round(float(split(line)))
 
         if 'Sortino Ratio' in line:
-            metrics['sortino'] = round(float(split(line)), 2)
+            metrics['sortino'] = round(float(split(line)))
 
         if 'Smart Sharpe' in line:
-            metrics['smart_sharpe'] = round(float(split(line)), 2)
+            metrics['smart_sharpe'] = round(float(split(line)), 1)
 
         if 'Smart Sortino' in line:
-            metrics['smart_sortino'] = round(float(split(line)), 2)
+            metrics['smart_sortino'] = round(float(split(line)), 1)
 
         if 'Winning Streak' in line:
             metrics['win_strk'] = int(split(line))
@@ -405,8 +407,7 @@ def get_metrics3(console_output) -> dict:
             metrics['lose_strk'] = int(split(line))
 
         if 'Longs | Shorts' in line:
-            metrics['n_of_longs'], metrics['n_of_shorts'] = split_n_of_longs_shorts(
-                line)
+            metrics['n_of_longs'], metrics['n_of_shorts'] = split_n_of_longs_shorts(line)
 
         if 'Largest Winning Trade' in line:
             metrics['largest_win'] = round(float(split(line)), 2)
@@ -428,6 +429,17 @@ def get_metrics3(console_output) -> dict:
 
         if 'Sequential Hps' in line:
             metrics['seq_hps'] = split(line)
+
+        if 'Max. Margin Ratio |' in line:
+            mr = round(float(split(line)), 2)
+            metrics['max_margin_ratio'] = mr + 100 if mr < 0 else mr
+
+        if '"max_margin_ratio":' in line:
+            mr = round(float(split(line)), 2)
+            metrics['max_margin_ratio'] = mr + 100 if mr < 0 else mr
+
+        if 'Minimum Margin |' in line:
+            metrics['min_margin'] = round(float(split(line)), 2)
 
     return metrics
 
