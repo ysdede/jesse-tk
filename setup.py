@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 with open('requirements.txt') as f:
     required = f.read().splitlines()
 
-# required.append('jesse @ git+https://github.com/ysdede/jesse.git@cache+yakirsim#egg=jesse',)
+required.append('jesse @ git+https://github.com/ysdede/jesse.git@cache+yakirsim#egg=jesse',)
 
 setup(
     name="jesse-tk",
