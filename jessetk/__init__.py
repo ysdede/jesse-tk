@@ -238,6 +238,39 @@ def random(start_date: str, finish_date: str, iterations: int, width: int, cpu: 
     rwth = RandomWalk(start_date, finish_date, iterations, width, max_cpu)
     rwth.run()
 
+# ///////////////////
+@cli.command()
+@click.argument('start_date', required=True, type=str)
+@click.argument('finish_date', required=True, type=str)
+@click.argument('width', required=False, type=int)
+@click.option(
+    '--cpu', default=0, show_default=True,
+    help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
+def fw(start_date: str, finish_date: str, width: int, cpu: int) -> None:
+    """
+                                forward walk backtest w/ threading.
+                                Enter period "YYYY-MM-DD" "YYYY-MM-DD
+                                Sample width in days        eg. 10"
+                                Thread counts to use        eg. 4
+    """
+
+    os.chdir(os.getcwd())
+    validate_cwd()
+    validateconfig()
+    makedirs()
+
+    if not width:
+        width = 10
+        print(
+            f'Window width not provided, falling back to {width} days window!')
+
+    max_cpu = utils.cpu_info(cpu)
+
+    from jessetk.FWalk import FWalk
+    fw = FWalk(start_date, finish_date, width, max_cpu)
+    fw.run()
+# 
+
 
 @cli.command()
 @click.argument('start_date', required=False, type=str)
