@@ -149,7 +149,7 @@ class RandomWalk:
 
         for _ in range(self.max_retries):
             random_number = random.randint(
-                0, self.rand_end.days)  # TODO Quantum random?
+                0, self.rand_end.days)
             if random_number not in self.random_numbers:
                 break
 
