@@ -659,7 +659,7 @@ def bulk(exchange: str, symbol: str, start_date: str, workers: int) -> None:
 @click.argument('exchange', required=True, type=str)
 @click.argument('start_date', required=True, type=str)
 @click.option(
-    '--workers', default=2, show_default=True,
+    '--workers', default=4, show_default=True,
     help='The number of workers to run simultaneously.')
 @click.option('--all/--list', default=False, help="Get pairs list from api or pairs from file.")
 def bulkpairs(exchange: str, start_date: str, workers: int, all) -> None:
@@ -691,7 +691,7 @@ def bulkpairs(exchange: str, start_date: str, workers: int, all) -> None:
         print(f'Invalid start date: {start_date}')
         exit()
 
-    workers = max(workers, 2)
+    workers = max(workers, 64)
 
     end = arrow.utcnow().floor('month').shift(months=-1)
     
@@ -743,7 +743,7 @@ def bulkpairs(exchange: str, start_date: str, workers: int, all) -> None:
     print(f'\x1b[36mStart: {start}  {end}\x1b[0m')
 
     bb = BulkJesse(start=start, end=end, exchange=exchange_name,
-                   symbol='BTC-USDT', market_type=market_type, tf='1m')
+                   symbol='BTC-USDT', market_type=market_type, tf='1m', worker_count=workers)
 
     today = arrow.utcnow().format('YYYY-MM-DD')
 
