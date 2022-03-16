@@ -99,6 +99,7 @@ class RandomWalk:
                     r['n_of_longs'],
                     r['n_of_shorts'],
                     r['total_profit'],
+                    r['max_margin_ratio'],
                     r['max_dd'],
                     r['annual_return'],
                     r['win_rate'],
@@ -138,7 +139,7 @@ class RandomWalk:
                 metric = {}
                 utils.print_random_header()
                 print('\x1b[6;30;42m' + random_console_formatter.format(*mean) + '\x1b[0m')
-                utils.print_random_tops(sorted_results, 25)
+                utils.print_random_tops(sorted_results, 40)
 
 
         utils.create_csv_report(
