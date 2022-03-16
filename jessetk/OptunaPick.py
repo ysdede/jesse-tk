@@ -109,7 +109,7 @@ class OptunaPick:
                 continue
 
             # Max DD
-            if trial.values[1] < self.t2:
+            if trial.values[1] > self.t2:
                 continue
 
             total_profit = trial.values[0]
