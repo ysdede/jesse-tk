@@ -89,7 +89,7 @@ class FWalk:
                 if metric not in results:
                     results.append(deepcopy(metric))
 
-                sorted_results = results  # sorted(results, key=lambda x: float(x['serenity']), reverse=True) DO NOT SORT!
+                sorted_results = sorted(results, key=lambda x: float(x['max_margin_ratio']), reverse=True)  # SORT!
 
                 res_as_list = []
                 for r in results:
@@ -135,7 +135,7 @@ class FWalk:
                 print(
                     f'{iters_completed}/{self.n_of_iters}\teta: {eta_formatted}/{remaining_formatted} | Speed: {speed} days/sec | {metric["exchange"]} '
                     f'| {metric["symbol"]} | {metric["tf"]} | {repr(metric["dna"])} '
-                    f'| Period: {self.start_date} -> {self.finish_date} | Sample width: {self.width} v7')
+                    f'| Period: {self.start_date} -> {self.finish_date} | Sample width: {self.width} v8')
 
                 metric = {}
                 utils.print_random_header()

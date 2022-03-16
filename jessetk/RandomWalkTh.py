@@ -88,7 +88,8 @@ class RandomWalk:
                     results.append(deepcopy(metric))
 
                 sorted_results = sorted(
-                    results, key=lambda x: float(x['serenity']), reverse=True)
+                    results, key=lambda x: float(x['max_margin_ratio']), reverse=True)
+                    # results, key=lambda x: float(x['serenity']), reverse=True)
 
                 res_as_list = []
                 for r in results:
