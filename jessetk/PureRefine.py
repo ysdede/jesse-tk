@@ -6,93 +6,118 @@ from datetime import datetime
 from subprocess import PIPE, Popen, call
 from time import sleep, strftime, gmtime
 from timeit import default_timer as timer
-
-from jesse.modes import backtest_mode
 from jesse.routes import router
-from jesse.services import db
-from jesse.services import report
-
 import jessetk.Vars as Vars
 import jessetk.utils
-from jessetk import utils, print_initial_msg, clear_console
 from jessetk.Vars import datadir
 from jessetk.Vars import refine_file_header
 import json
 from millify import millify
 
 
-class Refine:
-    def __init__(self, hp_py_file, start_date, finish_date, eliminate, cpu, dd, full_reports):
+class PureRefine:
+    def __init__(self):
 
         import signal
         signal.signal(signal.SIGINT, self.signal_handler)
 
-        self.hp_py_file = hp_py_file
-        self.start_date = start_date
-        self.finish_date = finish_date
-        self.cpu = cpu
-        self.eliminate = eliminate
-        self.dd = dd
-        self.fr = '--full-reports' if full_reports else ''
-        self.jessetkdir = datadir
-        self.anchor = 'DNA!'
+        self.exchange = None
+        self.pair = None
+        self.timeframe = None
+        self.strategy = None
+
         self.sort_by = {'serenity': 12, 'sharpe': 13, 'calmar': 14}
-
-        self.metrics = []
-
         self.n_of_iters = 0
-        self.results = []
-        self.sorted_results = []
-        self.results_without_dna = []
-
         self.hps_module = None
-        self.routes_template = None
-        self.params = None
-        self.n_of_params = None
 
+        self.removesimilardnas = False
+
+    def get_routes_info(self):
         r = router.routes[0]  # Read first route from routes.py
         self.exchange = r.exchange
         self.pair = r.symbol
         self.timeframe = r.timeframe
         self.strategy = r.strategy_name
 
-        self.removesimilardnas = False
+    def sort_hps(self, hps):
+        """Sort hyperparameters as defined in the strategy"""
+        r = router.routes[0]  # Read first route from routes.py
+        new_hps = []
+        for hp in hps:
+            hp_new = {}
+            for p in r.strategy.hyperparameters():
+                try:
+                    hp_new[p['name']] = hp[p['name']]
+                except:
+                    pass
+            new_hps.append(hp_new)
+        return new_hps
+
+    def run(self, hps = None, seq = None, start_date: str = None, finish_date: str = None, eliminate: bool = False, cpu = None, mr = None, full_reports = None):
+        if not isinstance(hps, list) ^ isinstance(seq, list):
+            print('No hps or seq provided or both provided. Please provide either hps or seq.')
+            return
+        
+        if not start_date or not finish_date:
+            print('No start_date or finish_date provided')
+            return
+        
+        cpu = jessetk.utils.cpu_info(cpu)
+        fr = ' --full-reports' if full_reports else ''
+
+        if hps:
+            print(f"{len(hps)=}")
+            hps = self.sort_hps(hps)
+            print(f"After sort: {len(hps)=}")
+
+        # If seq is provided, create hps from seq
+        # if not hps and seq:
+        #     print('Creating hps from seq')
+        #     hps = []
+        #     for s in seq:
+        #         hps.append[jessetk.utils.decode_seq(s)]
+
+        if not seq and hps:
+            print('Creating seq codes from hps')
+            seq = []
+            for hp in hps:
+                seq.append(jessetk.utils.hp_to_seq(hp))
 
         self.ts = datetime.now().strftime("%Y%m%d %H%M%S")
         self.filename = f'RefineHp-{self.exchange}-{self.pair}-{self.timeframe}--{start_date}--{finish_date}'
-
-        self.report_file_name = f'{self.jessetkdir}/results/{self.filename}--{self.ts}.csv'
-        self.log_file_name = f'{self.jessetkdir}/logs/{self.filename}--{self.ts}.log'
-
-    def run(self):
-        max_cpu = self.cpu
+        self.report_file_name = f'{datadir}/results/{self.filename}--{self.ts}.csv'
+        self.log_file_name = f'{datadir}/logs/{self.filename}--{self.ts}.log'
+        
         processes = []
         commands = []
         results = []
         sorted_results = []
         iters_completed = 0
-        self.import_dnas()
-        iters = self.n_of_params
-        self.n_of_iters = self.n_of_params
+        self.n_of_iters = self.n_of_params = iters = len(seq)
         index = 0  # TODO Reduce number of vars ...
         start = timer()
+        
+        # for s in seq:
+        #     print(s)
+        # sleep(10)
 
         while iters > 0:
             commands = []
 
-            for _ in range(max_cpu):
+            for _ in range(cpu):
                 if iters > 0:
-                    hps = self.params[index]
+                    s = seq[index]  # json.dumps(hps[index])
+
                     # hps = json.dumps(hps).replace('"', '%')
                     # print(f'parameters: {hps}')
 
                     commands.append(
-                        f'jesse-tk backtest {self.start_date} {self.finish_date} --seq {hps} {self.fr}'
+                        f'jesse-tk backtest {start_date} {finish_date} --seq {s}{fr}'
                         )
 
                     index += 1
                     iters -= 1
-
+            print(commands)
             processes = [Popen(cmd, shell=True, stdout=PIPE) for cmd in commands]
 
             # wait for completion
@@ -108,38 +133,30 @@ class Refine:
                 iters_completed += 1
 
                 # Map console output to a dict
-                metric = utils.get_metrics3(output.decode('utf-8'))
+                metric =jessetk.utils.get_metrics3(output.decode('utf-8'))
                 metric['dna'] =  metric['seq_hps']
 
                 # print('Metrics decoded', len(metric))
-
+                print('Len results', len(results))
                 if metric not in results:
                     results.append(deepcopy(metric))
 
-                sorted_results_prelist = sorted(results, key=lambda x: float(x['calmar']), reverse=True)
+                sorted_results_prelist = sorted(results, key=lambda x: float(x['pmr']), reverse=True)
                 # print(f'Sorted results: {sorted_results_prelist}')
                 # print('Sorted results', len(sorted_results_prelist))
 
-                # sleep(10)
-                self.sorted_results = []
+                self.sorted_results = sorted_results_prelist
 
-                if self.eliminate:
-                    for r in sorted_results_prelist:
-                        if float(r['sharpe']) > 0:
-                            self.sorted_results.append(r)
-                else:
-                    self.sorted_results = sorted_results_prelist
-
-                clear_console()
+                jessetk.utils.clear_console()
 
                 eta = ((timer() - start) / index) * (self.n_of_params - index)
                 eta_formatted = strftime("%H:%M:%S", gmtime(eta))
 
                 print(
                     f'{index}/{self.n_of_params}\teta: {eta_formatted} | {self.pair} '
-                    f'| {self.timeframe} | {self.start_date} -> {self.finish_date}')
+                    f'| {self.timeframe} | {start_date} -> {finish_date}')
 
-                self.print_tops_formatted()
+                self.print_tops_formatted(sorted_results_prelist, 40)
 
         # if self.eliminate:
         #     self.save_dnas(self.sorted_results, self.dna_py_file)
@@ -148,56 +165,45 @@ class Refine:
 
         # self.save_seq(self.sorted_results)
 
-        candidates = {
-            r['dna']: r['dna']
-            for r in self.sorted_results
-            if r['max_dd'] > self.dd
-        }
+        # candidates = {
+        #     r['dna']: r['dna']
+        #     for r in self.sorted_results
+        #     if r['max_dd'] > self.dd
+        # }
 
 
-        with open(f'SEQ-{self.pair}-{self.strategy}-{self.start_date}-{self.finish_date}.py', 'w') as f:
-            f.write("hps = ")
-            f.write(json.dumps(candidates, indent=1))
+        # with open(f'SEQ-{self.pair}-{self.strategy}-{self.start_date}-{self.finish_date}.py', 'w') as f:
+        #     f.write("hps = ")
+        #     f.write(json.dumps(candidates, indent=1))
 
-        utils.create_csv_report(self.sorted_results,
-                                self.report_file_name, refine_file_header)
-
+        # utils.create_csv_report(self.sorted_results,
+        #                         self.report_file_name, refine_file_header)
 
     def signal_handler(self, sig, frame):
         print('You pressed Ctrl+C!')
         sys.exit(0)
-
-    def import_dnas(self):
-        module_name = self.hp_py_file.replace('.\\', '').replace('.py', '')
-        module_name = module_name.replace('/', '.').replace('.py', '')
-        print(module_name)
-
-        self.hps_module = importlib.import_module(module_name)
-        importlib.reload(self.hps_module)
-        self.params = [*self.hps_module.hps]  # self.hps_module.hps.keys()
-        self.n_of_params = len(self.params)
-        print(f'Imported {self.n_of_params} parameters...')
-        # print('self.params', self.params)
-        # sleep(5)
         
     # v TODO Move to utils
-    def print_tops_formatted(self):
+    def print_tops_formatted(self, sorted_results=None, n:int = 25):
         print(
             Vars.refine_console_formatter.format(*Vars.refine_console_header1))
         print(
             Vars.refine_console_formatter.format(*Vars.refine_console_header2))
 
-        for r in self.sorted_results[:25]:
-            
-            p = {}
-            # make a copy of r dict but round values if they are floats
-            for k, v in r.items():
-                if type(v) is float and v > 999999:
-                    p[k] = millify(v, 2)
-                elif type(v) is float and abs(v) > 999:
-                    p[k] = round(v)
-                else:
-                    p[k] = v
+        for r in sorted_results[:n]:
+            p = r
+            # p = {}
+            # # make a copy of r dict but round values if they are floats
+            # for k, v in r.items():
+            #     try:
+            #         if type(v) is float and v > 999999:
+            #             p[k] = millify(v, 2)
+            #         elif type(v) is float and abs(v) > 999:
+            #             p[k] = round(v)
+            #         else:
+            #             p[k] = v
+            #     except:
+            #         p[k] = v
 
             # for i in range(len(r)):
             #     if isinstance(r[i], float) and r[i] > 999999:
@@ -214,6 +220,8 @@ class Refine:
                     p['n_of_longs'],
                     p['n_of_shorts'],
                     p['total_profit'],
+                    p['max_margin_ratio'],
+                    p['pmr'],
                     p['max_dd'],
                     p['annual_return'],
                     p['win_rate'],
@@ -232,7 +240,7 @@ class Refine:
     def save_dnas(self, sorted_results, dna_fn=None):
 
         if not dna_fn:
-            dna_fn = f'{self.jessetkdir}/dnafiles/{self.pair} {self.start_date} {self.finish_date}.py'
+            dna_fn = f'{datadir}/dnafiles/{self.pair} {self.start_date} {self.finish_date}.py'
 
         jessetk.utils.remove_file(dna_fn)
 

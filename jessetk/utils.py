@@ -113,8 +113,8 @@ def hp_to_seq(hp):
         if len(str(v)) > longest_param:
             longest_param = len(str(v))
 
-    hash = ''.join([f'{value:0>{longest_param}}' for key, value in hp.items()])
-    return f"{hash}{longest_param}"
+    seq = ''.join([f'{value:0>{longest_param}}' for key, value in hp.items()])
+    return f"{seq}{longest_param}"
 
 
 def decode_seq(seq):
@@ -430,7 +430,7 @@ def get_metrics3(console_output) -> dict:
         if 'Sequential Hps' in line:
             metrics['seq_hps'] = split(line)
 
-        if 'Max. Margin Ratio |' in line:
+        if 'Max. Margin Ratio ' in line and '|' in line:
             mr = round(float(split(line)), 2)
             metrics['max_margin_ratio'] = mr + 100 if mr < 0 else mr
 
@@ -438,8 +438,11 @@ def get_metrics3(console_output) -> dict:
             mr = round(float(split(line)), 2)
             metrics['max_margin_ratio'] = mr + 100 if mr < 0 else mr
 
-        if 'Minimum Margin |' in line:
+        if 'Minimum Margin ' in line and '|' in line:
             metrics['min_margin'] = round(float(split(line)), 2)
+        
+        if metrics['total_profit'] and metrics['max_margin_ratio']:
+            metrics['pmr'] = round(metrics['total_profit'] / metrics['max_margin_ratio'], 2)
 
     return metrics
 

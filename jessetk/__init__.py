@@ -81,6 +81,54 @@ def optuna_pick(treshold1: float, treshold2:float) -> None:
     op = OptunaPick(t1=treshold1, t2=treshold2)
     op.dump_best_parameters()
 
+@cli.command()
+# @click.argument('treshold1', required=False, type=float, default=0.001)
+# @click.argument('treshold2', required=False, type=float, default=-59.0)
+def optuna_best() -> None:
+    
+    os.chdir(os.getcwd())
+    validate_cwd()
+
+    # print(f"treshold1: {treshold1}")
+    # print(f"treshold2: {treshold2}")
+
+    from jessetk.OptunaBestTrials import OptunaBestTrials
+    op = OptunaBestTrials()
+    bt_list, hp_list = op.pick_best_parameters()
+
+
+# ------------------------------------------
+@cli.command()
+@click.argument('start_date', required=True, type=str)
+@click.argument('finish_date', required=True, type=str)
+@click.option('--eliminate/--no-eliminate', default=False,
+              help='Remove worst performing dnas at every iteration.')
+@click.option(
+    '--cpu', default=0, show_default=True,
+    help='The number of CPU cores that Jesse is allowed to use. If set to 0, it will use as many as is available on your machine.')
+@click.option(
+    '--mr', default=97, show_default=True,
+    help='Maximum Margin limit for filtering results.')
+@click.option('--full-reports/--no-full-reports', default=False,
+              help="Generates QuantStats' HTML output with metrics reports like Sharpe ratio, Win rate, Volatility, etc., and batch plotting for visualizing performance, drawdowns, rolling statistics, monthly returns, etc.")
+def refine_best_trials(start_date: str, finish_date: str, eliminate: bool, cpu: int, mr: int, full_reports) -> None:
+    """
+    TODO
+    """
+    os.chdir(os.getcwd())
+    validate_cwd()
+    validateconfig()
+    makedirs()
+
+    from jessetk.OptunaBestTrials import OptunaBestTrials
+    op = OptunaBestTrials()
+    bt_list, hp_list = op.pick_best_parameters()
+
+    from jessetk.PureRefine import PureRefine
+    pr = PureRefine()
+    pr.run(hps = hp_list, start_date=start_date, finish_date=finish_date, eliminate=eliminate, cpu=cpu, mr=mr, full_reports=full_reports)
+
+# --------------------------------------
 
 @cli.command()
 @click.argument('dna_log_file', required=True, type=str)
@@ -899,7 +947,6 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
         print(f'Base32 DNA: {dna} -> {hp_new}')
 
     # Convert and inject SEQ encoded payload to route
-    # and hp_new is None and r.dna is None and dna is None and hp is None:
     if seq != 'None' and hp_new is None:
         seq_encoded = utils.decode_seq(seq)
         hp_new = {
@@ -911,7 +958,6 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
 
     hp_dict = None
     # Convert and inject HP (Json) payload to route
-    # and hp_new is None and r.dna is None and dna is None and seq is None:
     if hp != 'None' and hp_new is None:
         hp_dict = json_lib.loads(hp.replace("'", '"').replace('%', '"'))
         hp_new = {p['name']: hp_dict[p['name']] for p in r.strategy.hyperparameters()}
@@ -919,7 +965,6 @@ def backtest(start_date: str, finish_date: str, debug: bool, csv: bool, json: bo
     backtest_mode.run(start_date, finish_date, chart=chart, tradingview=tradingview, csv=csv,
                       json=json, full_reports=full_reports, hyperparameters=hp_new)
 
-    # Fix: Print out SeQ to console to help metrics module to grab it
     if seq != 'None':
         print('Sequential Hps:    |', seq)
 
