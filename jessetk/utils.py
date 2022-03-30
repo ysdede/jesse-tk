@@ -272,6 +272,7 @@ def print_random_tops(sr, top_n):
                 r['n_of_shorts'],
                 r['total_profit'],
                 r['max_margin_ratio'],
+                r['pmr'],
                 r['max_dd'],
                 r['annual_return'],
                 r['win_rate'],
