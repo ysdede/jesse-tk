@@ -117,7 +117,7 @@ class PureRefine:
 
                     index += 1
                     iters -= 1
-            # print(commands)
+            print(commands)
             processes = [Popen(cmd, shell=True, stdout=PIPE) for cmd in commands]
 
             # wait for completion

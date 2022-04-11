@@ -68,7 +68,7 @@ def cli() -> None:
 
 @cli.command()
 @click.argument('treshold1', required=False, type=float, default=0.001)
-@click.argument('treshold2', required=False, type=float, default=-59.0)
+@click.argument('treshold2', required=False, type=float, default=90.0)
 def optuna_pick(treshold1: float, treshold2:float) -> None:
     
     os.chdir(os.getcwd())
@@ -220,9 +220,15 @@ def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: in
 @click.option(
     '--dd', default=-90, show_default=True,
     help='Maximum drawdown limit for filtering results. Use negative values.')
+@click.option(
+    '--mr', default=90, show_default=True,
+    help='Maximum margin ratio limit for filtering results.')
+@click.option(
+    '--sortby', default='sharpe', show_default=True,
+    help='Metric to sort results. Alternatives: pmr, calmar')
 @click.option('--full-reports/--no-full-reports', default=False,
               help="Generates QuantStats' HTML output with metrics reports like Sharpe ratio, Win rate, Volatility, etc., and batch plotting for visualizing performance, drawdowns, rolling statistics, monthly returns, etc.")
-def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: int, dd: int, full_reports) -> None:
+def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: int, dd: int, mr:int, sortby:str, full_reports) -> None:
     """
     backtest all Sequential candidate Optuna parameters.
     Enter in "YYYY-MM-DD" "YYYY-MM-DD"
@@ -232,6 +238,9 @@ def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu:
     validateconfig()
     makedirs()
 
+    if sortby not in ['sharpe', 'pmr', 'calmar']:  # TODO: Extend this list
+        sortby = 'sharpe'
+        
     if not eliminate:
         eliminate = False
 
@@ -246,7 +255,7 @@ def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu:
 
     from jessetk.RefineSeq import Refine
     r = Refine(hp_file, start_date, finish_date, eliminate,
-               max_cpu, dd=dd, full_reports=full_reports)
+               max_cpu, dd=dd, mr=mr, sortby=sortby, full_reports=full_reports)
     r.run()
 
 

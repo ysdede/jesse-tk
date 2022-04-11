@@ -253,6 +253,58 @@ def print_tops_formatted(frmt, header1, header2, tr):
                 r['n_of_wins'], r['n_of_loses'],
                 r['paid_fees'], r['market_change']))
 
+# def print_tops_neu(sorted_results=None, n:int = 25):
+#         print(
+#             jessetk.Vars.refine_console_formatter.format(*jessetk.Vars.refine_console_header1))
+#         print(
+#             jessetk.Vars.refine_console_formatter.format(*jessetk.Vars.refine_console_header2))
+
+#         for r in sorted_results[:n]:
+#             p = r
+#             # p = {}
+#             # # make a copy of r dict but round values if they are floats
+#             # for k, v in r.items():
+#             #     try:
+#             #         if type(v) is float and v > 999999:
+#             #             p[k] = millify(v, 2)
+#             #         elif type(v) is float and abs(v) > 999:
+#             #             p[k] = round(v)
+#             #         else:
+#             #             p[k] = v
+#             #     except:
+#             #         p[k] = v
+
+#             # for i in range(len(r)):
+#             #     if isinstance(r[i], float) and r[i] > 999999:
+#             #         p.append(millify(round(r[i]), 2))  # '{:.2f}'.format(r[i])
+#             #     # elif isinstance(r[i], float) and r[i] > 1000:
+#             #     #     p.append(round(r[i], 2))
+#             #     else:
+#             #         p.append(r[i])
+
+#             print(
+#                 jessetk.Vars.refine_console_formatter.format(
+#                     p['dna'],
+#                     p['total_trades'],
+#                     p['n_of_longs'],
+#                     p['n_of_shorts'],
+#                     p['total_profit'],
+#                     p['max_margin_ratio'],
+#                     p['pmr'],
+#                     p['max_dd'],
+#                     p['annual_return'],
+#                     p['win_rate'],
+#                     p['serenity'],
+#                     p['sharpe'],
+#                     p['calmar'],
+#                     p['win_strk'],
+#                     p['lose_strk'],
+#                     p['largest_win'],
+#                     p['largest_lose'],
+#                     p['n_of_wins'],
+#                     p['n_of_loses'],
+#                     p['paid_fees'],
+#                     p['market_change']))
 
 def print_random_header():
     print(

@@ -3,18 +3,15 @@ import os
 import sys
 from copy import deepcopy
 from datetime import datetime
-from subprocess import PIPE, Popen, call
+from subprocess import PIPE, Popen
 from time import sleep, strftime, gmtime
 from timeit import default_timer as timer
-
-from jesse.modes import backtest_mode
 from jesse.routes import router
-from jesse.services import db
-from jesse.services import report
+
 
 import jessetk.Vars as Vars
 import jessetk.utils
-from jessetk import utils, print_initial_msg, clear_console
+from jessetk import utils
 from jessetk.Vars import datadir
 from jessetk.Vars import refine_file_header
 import json
@@ -22,7 +19,7 @@ from millify import millify
 
 
 class Refine:
-    def __init__(self, hp_py_file, start_date, finish_date, eliminate, cpu, dd, full_reports):
+    def __init__(self, hp_py_file, start_date, finish_date, eliminate, cpu, dd, mr, sortby, full_reports):
 
         import signal
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -33,6 +30,8 @@ class Refine:
         self.cpu = cpu
         self.eliminate = eliminate
         self.dd = dd
+        self.mr = mr
+        self.sortby = sortby
         self.fr = '--full-reports' if full_reports else ''
         self.jessetkdir = datadir
         self.anchor = 'DNA!'
@@ -116,7 +115,7 @@ class Refine:
                 if metric not in results:
                     results.append(deepcopy(metric))
 
-                sorted_results_prelist = sorted(results, key=lambda x: float(x['calmar']), reverse=True)
+                sorted_results_prelist = sorted(results, key=lambda x: float(x[self.sortby]), reverse=True)
                 # print(f'Sorted results: {sorted_results_prelist}')
                 # print('Sorted results', len(sorted_results_prelist))
 
@@ -130,7 +129,7 @@ class Refine:
                 else:
                     self.sorted_results = sorted_results_prelist
 
-                clear_console()
+                utils.clear_console()
 
                 eta = ((timer() - start) / index) * (self.n_of_params - index)
                 eta_formatted = strftime("%H:%M:%S", gmtime(eta))
@@ -151,7 +150,7 @@ class Refine:
         candidates = {
             r['dna']: r['dna']
             for r in self.sorted_results
-            if r['max_dd'] > self.dd
+            if r['max_dd'] > self.dd and r['max_margin_ratio'] < self.mr
         }
 
 
@@ -181,23 +180,29 @@ class Refine:
         # sleep(5)
         
     # v TODO Move to utils
-    def print_tops_formatted(self):
-        print(
-            Vars.refine_console_formatter.format(*Vars.refine_console_header1))
-        print(
-            Vars.refine_console_formatter.format(*Vars.refine_console_header2))
-
-        for r in self.sorted_results[:25]:
+    def print_tops_formatted(self, sorted_results=None, n:int = 25):
+        if sorted_results is None:
+            sorted_results = self.sorted_results
             
-            p = {}
-            # make a copy of r dict but round values if they are floats
-            for k, v in r.items():
-                if type(v) is float and v > 999999:
-                    p[k] = millify(v, 2)
-                elif type(v) is float and abs(v) > 999:
-                    p[k] = round(v)
-                else:
-                    p[k] = v
+        print(
+            jessetk.Vars.refine_console_formatter.format(*jessetk.Vars.refine_console_header1))
+        print(
+            jessetk.Vars.refine_console_formatter.format(*jessetk.Vars.refine_console_header2))
+
+        for r in sorted_results[:n]:
+            p = r
+            # p = {}
+            # # make a copy of r dict but round values if they are floats
+            # for k, v in r.items():
+            #     try:
+            #         if type(v) is float and v > 999999:
+            #             p[k] = millify(v, 2)
+            #         elif type(v) is float and abs(v) > 999:
+            #             p[k] = round(v)
+            #         else:
+            #             p[k] = v
+            #     except:
+            #         p[k] = v
 
             # for i in range(len(r)):
             #     if isinstance(r[i], float) and r[i] > 999999:
@@ -208,12 +213,14 @@ class Refine:
             #         p.append(r[i])
 
             print(
-                Vars.refine_console_formatter.format(
+                jessetk.Vars.refine_console_formatter.format(
                     p['dna'],
                     p['total_trades'],
                     p['n_of_longs'],
                     p['n_of_shorts'],
                     p['total_profit'],
+                    p['max_margin_ratio'],
+                    p['pmr'],
                     p['max_dd'],
                     p['annual_return'],
                     p['win_rate'],
@@ -228,6 +235,54 @@ class Refine:
                     p['n_of_loses'],
                     p['paid_fees'],
                     p['market_change']))
+
+    # def print_tops_formatted(self):
+    #     print(
+    #         Vars.refine_console_formatter.format(*Vars.refine_console_header1))
+    #     print(
+    #         Vars.refine_console_formatter.format(*Vars.refine_console_header2))
+
+    #     for r in self.sorted_results[:25]:
+            
+    #         p = {}
+    #         # make a copy of r dict but round values if they are floats
+    #         for k, v in r.items():
+    #             if type(v) is float and v > 999999:
+    #                 p[k] = millify(v, 2)
+    #             elif type(v) is float and abs(v) > 999:
+    #                 p[k] = round(v)
+    #             else:
+    #                 p[k] = v
+
+    #         # for i in range(len(r)):
+    #         #     if isinstance(r[i], float) and r[i] > 999999:
+    #         #         p.append(millify(round(r[i]), 2))  # '{:.2f}'.format(r[i])
+    #         #     # elif isinstance(r[i], float) and r[i] > 1000:
+    #         #     #     p.append(round(r[i], 2))
+    #         #     else:
+    #         #         p.append(r[i])
+
+    #         print(
+    #             Vars.refine_console_formatter.format(
+    #                 p['dna'],
+    #                 p['total_trades'],
+    #                 p['n_of_longs'],
+    #                 p['n_of_shorts'],
+    #                 p['total_profit'],
+    #                 p['max_dd'],
+    #                 p['annual_return'],
+    #                 p['win_rate'],
+    #                 p['serenity'],
+    #                 p['sharpe'],
+    #                 p['calmar'],
+    #                 p['win_strk'],
+    #                 p['lose_strk'],
+    #                 p['largest_win'],
+    #                 p['largest_lose'],
+    #                 p['n_of_wins'],
+    #                 p['n_of_loses'],
+    #                 p['paid_fees'],
+    #                 p['market_change']))
 
     def save_dnas(self, sorted_results, dna_fn=None):
 
