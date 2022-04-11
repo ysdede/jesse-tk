@@ -7,7 +7,7 @@ required.append('jesse @ git+https://github.com/ysdede/jesse.git@cache+yakirsim#
 
 setup(
     name="jesse-tk",
-    version='0.5.8',
+    version='0.6.0',
     packages=find_packages(),
     install_requires=required,
 

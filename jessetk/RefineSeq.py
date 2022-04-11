@@ -153,10 +153,15 @@ class Refine:
             if r['max_dd'] > self.dd and r['max_margin_ratio'] < self.mr
         }
 
+        print(f'\n\nCandidates: {len(candidates)}')
+        seq_fn = f'SEQ-{self.pair}-{self.strategy}-{self.start_date}-{self.finish_date}.py'
 
-        with open(f'SEQ-{self.pair}-{self.strategy}-{self.start_date}-{self.finish_date}.py', 'w') as f:
+        with open(seq_fn, 'w') as f:
             f.write("hps = ")
             f.write(json.dumps(candidates, indent=1))
+
+        with open('last_seq_fn', 'w') as f:
+            f.write(seq_fn)
 
         utils.create_csv_report(self.sorted_results,
                                 self.report_file_name, refine_file_header)
@@ -180,7 +185,7 @@ class Refine:
         # sleep(5)
         
     # v TODO Move to utils
-    def print_tops_formatted(self, sorted_results=None, n:int = 25):
+    def print_tops_formatted(self, sorted_results=None, n:int = 50):
         if sorted_results is None:
             sorted_results = self.sorted_results
             

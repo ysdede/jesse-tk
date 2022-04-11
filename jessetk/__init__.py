@@ -237,10 +237,20 @@ def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu:
     validate_cwd()
     validateconfig()
     makedirs()
+    
+    if hp_file == 'last':
+        try:
+            with open('last_seq_fn', 'r') as f:
+                hp_file = f.read()
+        except:
+            print('No last_seq_fn file found!')
+            exit()
+
+        print('Last hp file:', hp_file)
 
     if sortby not in ['sharpe', 'pmr', 'calmar']:  # TODO: Extend this list
         sortby = 'sharpe'
-        
+
     if not eliminate:
         eliminate = False
 
