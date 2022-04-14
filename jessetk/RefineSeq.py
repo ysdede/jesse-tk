@@ -123,9 +123,10 @@ class Refine:
                 self.sorted_results = []
 
                 if self.eliminate:
-                    for r in sorted_results_prelist:
-                        if float(r['sharpe']) > 0:
-                            self.sorted_results.append(r)
+                    self.sorted_results.extend(
+                        r for r in sorted_results_prelist if float(r['sharpe']) > 0
+                    )
+
                 else:
                     self.sorted_results = sorted_results_prelist
 

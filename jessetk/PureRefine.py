@@ -57,11 +57,11 @@ class PureRefine:
         if not isinstance(hps, list) ^ isinstance(seq, list):
             print('No hps or seq provided or both provided. Please provide either hps or seq.')
             return
-        
+
         if not start_date or not finish_date:
             print('No start_date or finish_date provided')
             return
-        
+
         cpu = jessetk.utils.cpu_info(cpu)
         fr = ' --full-reports' if full_reports else ''
 
@@ -79,15 +79,12 @@ class PureRefine:
 
         if not seq and hps:
             print('Creating seq codes from hps')
-            seq = []
-            for hp in hps:
-                seq.append(jessetk.utils.hp_to_seq(hp))
-
+            seq = [jessetk.utils.hp_to_seq(hp) for hp in hps]
         self.ts = datetime.now().strftime("%Y%m%d %H%M%S")
         self.filename = f'RefineHp-{self.exchange}-{self.pair}-{self.timeframe}--{start_date}--{finish_date}'
         self.report_file_name = f'{datadir}/results/{self.filename}--{self.ts}.csv'
         self.log_file_name = f'{datadir}/logs/{self.filename}--{self.ts}.log'
-        
+
         processes = []
         commands = []
         results = []
@@ -96,7 +93,7 @@ class PureRefine:
         self.n_of_iters = self.n_of_params = iters = len(seq)
         index = 0  # TODO Reduce number of vars ...
         start = timer()
-        
+
         # for s in seq:
         #     print(s)
         # sleep(10)

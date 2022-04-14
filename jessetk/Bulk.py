@@ -55,7 +55,7 @@ class Bulk:
         temp_dir = Path("/tmp" if platform.system() ==
                         "Darwin" else tempfile.gettempdir())
         print('\033[1m', '\033[37m', 'temp_dir', temp_dir, '\033[0m')
-        self.base_folder = str(temp_dir) + '/bulkdata/'
+        self.base_folder = f'{str(temp_dir)}/bulkdata/'
         os.makedirs(self.base_folder, exist_ok=True)
 
     def run(self):

@@ -131,11 +131,11 @@ class OptunaPick:
             rounded_params = trial.params
 
             # Inject payload HP to route
-            hp_new = {}
+            hp_new = {
+                p['name']: rounded_params[p['name']]
+                for p in r.strategy.hyperparameters()
+            }
 
-            # Sort hyperparameters as defined in the strategy
-            for p in r.strategy.hyperparameters():
-                hp_new[p['name']] = rounded_params[p['name']]
 
             rounded_params = hp_new
 
