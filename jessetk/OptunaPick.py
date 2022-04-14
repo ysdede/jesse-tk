@@ -90,7 +90,7 @@ class OptunaPick:
         r.strategy = StrategyClass()
 
         for trial in trials:
-            total_profit = max_dd = None
+            total_profit = max_mr = None
             if trial.state != optuna.trial.TrialState.COMPLETE:
                 continue
 
@@ -109,11 +109,11 @@ class OptunaPick:
                 continue
 
             # Max DD
-            if trial.values[1] < self.t2:
+            if trial.values[1] > self.t2:
                 continue
 
             total_profit = trial.values[0]
-            max_dd = trial.values[1]
+            max_mr = trial.values[1]
 
             try:
                 serenity = trial.user_attrs['serenity1']
@@ -152,8 +152,8 @@ class OptunaPick:
                     trial.number, f"'{hash}'",
                     *trial.values,
                     trial.user_attrs['serenity1'],
-                    total_profit if max_dd == 0 else round(
-                        total_profit / abs(max_dd)),
+                    total_profit if max_mr == 0 else round(
+                        total_profit / abs(max_mr)),
                     trial.user_attrs['sharpe1'],
                     trial.user_attrs['trades1'],
                     trial.user_attrs['fees1'],

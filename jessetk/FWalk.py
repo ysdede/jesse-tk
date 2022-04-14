@@ -15,24 +15,21 @@ from jessetk.utils import clear_console
 
 
 # Random walk backtesting w/ threading
-class RandomWalk:
-    def __init__(self, start_date, finish_date, n_of_iters, width, cpu):
+class FWalk:
+    def __init__(self, start_date, finish_date, width, cpu):
         self.start_date = start_date
         self.finish_date = finish_date
-        self.n_of_iters = n_of_iters
         self.width = width
         self.cpu = cpu
 
         self.jessetkdir = datadir
         self.max_retries = 6
 
-        self.start_date_object = datetime.strptime(start_date,
-                                                   '%Y-%m-%d')  # start_date as datetime object, to make calculations easier.
+        self.start_date_object = datetime.strptime(start_date, '%Y-%m-%d')
         self.finish_date_object = datetime.strptime(finish_date, '%Y-%m-%d')
-        self.test_period_length = self.finish_date_object - \
-            self.start_date_object  # Test period length as days
-        self.rand_end = self.test_period_length - \
-            timedelta(days=width)  # period - windows width
+        self.test_period_length = self.finish_date_object - self.start_date_object  # Test period length as days
+        self.rand_end = self.test_period_length - timedelta(days=width)  # period - windows width
+        self.n_of_iters = self.rand_end.days  # Number of iterations
 
         self.results = []
         self.sorted_results = []
@@ -47,19 +44,23 @@ class RandomWalk:
         self.dna = r.dna
 
         self.ts = datetime.now().strftime("%Y%m%d-%H%M%S")
-        self.filename = f'Random-{self.strategy}-{start_date}--{finish_date}-{self.ts}'
+        self.filename = f'Forward-{self.strategy}-{start_date}--{finish_date}-{self.ts}'
         self.report_file_name = f'{self.jessetkdir}/results/{self.filename}.csv'
         self.log_file_name = f'{self.jessetkdir}/logs/{self.filename}--{self.ts}.log'
 
     def run(self):
         max_cpu = self.cpu
-        iters = self.n_of_iters
         width = self.width
         processes = []
         commands = []
         results = []
         sorted_results = []
         iters_completed = 0
+        iters = self.rand_end.days
+
+        print(f'\n{self.rand_end}')
+        print(f"\niters: {iters}")
+        print(f"width: {width}")
 
         start = timer()
         while iters > 0:
@@ -67,9 +68,10 @@ class RandomWalk:
             for _ in range(max_cpu):
                 if iters > 0:
                     # Create a random period between given period
-                    rand_period_start, rand_period_finish = self.make_random_period()
+                    fw_period_start, fw_period_finish = self.make_fw_period(self.rand_end.days - iters)
+
                     commands.append(
-                        f'jesse-tk backtest {rand_period_start} {rand_period_finish}')
+                        f'jesse-tk backtest {fw_period_start} {fw_period_finish}')
                     iters -= 1
 
             processes = [Popen(cmd, stdout=PIPE, shell=True) for cmd in commands]
@@ -87,9 +89,7 @@ class RandomWalk:
                 if metric not in results:
                     results.append(deepcopy(metric))
 
-                sorted_results = sorted(
-                    results, key=lambda x: float(x['max_margin_ratio']), reverse=True)
-                    # results, key=lambda x: float(x['serenity']), reverse=True)
+                sorted_results = sorted(results, key=lambda x: float(x['max_margin_ratio']), reverse=True)  # SORT!
 
                 res_as_list = []
                 for r in results:
@@ -101,6 +101,7 @@ class RandomWalk:
                     r['n_of_shorts'],
                     r['total_profit'],
                     r['max_margin_ratio'],
+                    r['pmr'],
                     r['max_dd'],
                     r['annual_return'],
                     r['win_rate'],
@@ -135,29 +136,18 @@ class RandomWalk:
                 print(
                     f'{iters_completed}/{self.n_of_iters}\teta: {eta_formatted}/{remaining_formatted} | Speed: {speed} days/sec | {metric["exchange"]} '
                     f'| {metric["symbol"]} | {metric["tf"]} | {repr(metric["dna"])} '
-                    f'| Period: {self.start_date} -> {self.finish_date} | Sample width: {self.width} v7')
+                    f'| Period: {self.start_date} -> {self.finish_date} | Sample width: {self.width} v8')
 
                 metric = {}
                 utils.print_random_header()
                 print('\x1b[6;30;42m' + random_console_formatter.format(*mean) + '\x1b[0m')
-                utils.print_random_tops(sorted_results, 40)
+                utils.print_random_tops(sorted_results, 25)
 
 
         utils.create_csv_report(
             sorted_results, self.report_file_name, random_file_header)
 
-    def make_random_period(self):
-        random_number = None
-
-        for _ in range(self.max_retries):
-            random_number = random.randint(
-                0, self.rand_end.days)
-            if random_number not in self.random_numbers:
-                break
-
-        self.random_numbers.append(random_number)
-
-        random_start_date = self.start_date_object + timedelta(
-            days=random_number)  # Add random number of days to start date
-        random_finish_date = random_start_date + timedelta(days=self.width)
-        return random_start_date.strftime('%Y-%m-%d'), random_finish_date.strftime('%Y-%m-%d')
+    def make_fw_period(self, index: int):
+        fw_start_date = self.start_date_object + timedelta(days=index)
+        fw_finish_date = fw_start_date + timedelta(days=self.width)
+        return fw_start_date.strftime('%Y-%m-%d'), fw_finish_date.strftime('%Y-%m-%d')

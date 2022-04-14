@@ -15,24 +15,26 @@ import json
 from datetime import datetime, timedelta
 from dateutil.tz import UTC
 
+
 def add_days(date: str, days: int):
     """Add days to a ISO formatted date string"""
     return (datetime.strptime(date, '%Y-%m-%d') + timedelta(days=days)).strftime('%Y-%m-%d')
+
 
 def sub_days(date: str, days: int):
     """Subtract days from a ISO formatted date string"""
     return (datetime.strptime(date, '%Y-%m-%d') - timedelta(days=days)).strftime('%Y-%m-%d')
 
+
 def get_symbols_list(exchange: str = 'Binance Futures', quote_asset: str = 'USDT') -> list:
     local_fn = f"{exchange.replace(' ', '')}ExchangeInfo.json"
-    urls = {'Binance': 'https://api.binance.com/api/v1/exchangeInfo', 'Binance Futures': 'https://fapi.binance.com/fapi/v1/exchangeInfo'}
-    symbols_list = []
+    urls = {'Binance': 'https://api.binance.com/api/v1/exchangeInfo',
+            'Binance Futures': 'https://fapi.binance.com/fapi/v1/exchangeInfo'}
 
     try:
         with urllib.request.urlopen(urls[exchange]) as url:
             data = json.loads(url.read().decode())
 
-        # save url to file
         if int(data['serverTime']):
             try:
                 with open(local_fn, 'w') as f:
@@ -47,7 +49,8 @@ def get_symbols_list(exchange: str = 'Binance Futures', quote_asset: str = 'USDT
             with open(local_fn) as f:
                 data = json.load(f)
 
-            print(f"Using cached local data from {datetime.utcfromtimestamp(data['serverTime'] / 1000).strftime('%Y-%m-%d %H:%M')}")
+            print(
+                f"Using cached local data from {datetime.utcfromtimestamp(data['serverTime'] / 1000).strftime('%Y-%m-%d %H:%M')}")
         except Exception as e:
             print(f"Error while loading local api data for {exchange}. {e}")
             return None
@@ -60,15 +63,15 @@ def get_symbols_list(exchange: str = 'Binance Futures', quote_asset: str = 'USDT
         # Check if symbol is a leveraged token (UP/DOWN)
 
         try:
-            blvt  = 'LEVERAGED' in sym['permissions']
+            blvt = 'LEVERAGED' in sym['permissions']
         except:
-            pass        
+            pass
 
         if sym['quoteAsset'] == quote_asset and not blvt and sym['status'] != 'BREAK':
-            # print(f"{sym['baseAsset']}-{quote_asset}")
             symbols.append(f"{sym['baseAsset']}-{quote_asset}")
 
     return symbols or None
+
 
 def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures') -> list:
     from jesse.config import config
@@ -83,7 +86,8 @@ def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures
     db_port = config['env']['databases']['postgres_port']
 
     try:
-        conn = psycopg2.connect(database=db_name, user=db_user, password=db_pass, host=db_host, port=db_port)
+        conn = psycopg2.connect(
+            database=db_name, user=db_user, password=db_pass, host=db_host, port=db_port)
 
         cursor = conn.cursor()
         query = f"select symbol from public.candle where exchange = '{exchange}' and timestamp = {epoch} group by symbol;"
@@ -101,21 +105,20 @@ def avail_pairs(start_date: str = '2021-08-01', exchange: str = 'Binance Futures
             conn.close()
         return symbols_list or []
 
+
 def hp_to_seq(hp):
     longest_param = 0
 
     for v in hp.values():
         if len(str(v)) > longest_param:
             longest_param = len(str(v))
-            
-    hash = ''.join([f'{value:0>{longest_param}}' for key, value in hp.items()])
-    return f"{hash}{longest_param}"
+
+    seq = ''.join([f'{value:0>{longest_param}}' for key, value in hp.items()])
+    return f"{seq}{longest_param}"
 
 
 def decode_seq(seq):
-    # Get the sequence width from the last char
     width = int(seq[-1])
-    # Remove the width from the sequence
     seq = seq[:-1]
     return [seq[i:i+width] for i in range(0, len(seq), width)]
 
@@ -147,6 +150,7 @@ def hp_to_dna(strategy_hp, hps):    # TODO - make it work with floats too
 
 
 def cpu_info(cpu):
+    # TODO: Don't limit max threads
     if cpu > cpu_count():
         raise ValueError(
             f'Entered cpu cores number is more than available on this machine which is {cpu_count()}')
@@ -154,7 +158,7 @@ def cpu_info(cpu):
         max_cpu = cpu_count()
     else:
         max_cpu = cpu
-    print('Cpu count:', cpu_count(), 'In use:', max_cpu)
+    print('Cpu or Thread count:', cpu_count(), 'In use:', max_cpu)
     return max_cpu
 
 
@@ -205,10 +209,10 @@ def split(line):
     r = r.replace('(', '')
     return r.replace(',', '')
 
+
 def split_dna_string(line):
     ll = line.split(' ')
     return ll[len(ll) - 1]
-    
 
 
 def split_n_of_longs_shorts(line):
@@ -249,6 +253,58 @@ def print_tops_formatted(frmt, header1, header2, tr):
                 r['n_of_wins'], r['n_of_loses'],
                 r['paid_fees'], r['market_change']))
 
+# def print_tops_neu(sorted_results=None, n:int = 25):
+#         print(
+#             jessetk.Vars.refine_console_formatter.format(*jessetk.Vars.refine_console_header1))
+#         print(
+#             jessetk.Vars.refine_console_formatter.format(*jessetk.Vars.refine_console_header2))
+
+#         for r in sorted_results[:n]:
+#             p = r
+#             # p = {}
+#             # # make a copy of r dict but round values if they are floats
+#             # for k, v in r.items():
+#             #     try:
+#             #         if type(v) is float and v > 999999:
+#             #             p[k] = millify(v, 2)
+#             #         elif type(v) is float and abs(v) > 999:
+#             #             p[k] = round(v)
+#             #         else:
+#             #             p[k] = v
+#             #     except:
+#             #         p[k] = v
+
+#             # for i in range(len(r)):
+#             #     if isinstance(r[i], float) and r[i] > 999999:
+#             #         p.append(millify(round(r[i]), 2))  # '{:.2f}'.format(r[i])
+#             #     # elif isinstance(r[i], float) and r[i] > 1000:
+#             #     #     p.append(round(r[i], 2))
+#             #     else:
+#             #         p.append(r[i])
+
+#             print(
+#                 jessetk.Vars.refine_console_formatter.format(
+#                     p['dna'],
+#                     p['total_trades'],
+#                     p['n_of_longs'],
+#                     p['n_of_shorts'],
+#                     p['total_profit'],
+#                     p['max_margin_ratio'],
+#                     p['pmr'],
+#                     p['max_dd'],
+#                     p['annual_return'],
+#                     p['win_rate'],
+#                     p['serenity'],
+#                     p['sharpe'],
+#                     p['calmar'],
+#                     p['win_strk'],
+#                     p['lose_strk'],
+#                     p['largest_win'],
+#                     p['largest_lose'],
+#                     p['n_of_wins'],
+#                     p['n_of_loses'],
+#                     p['paid_fees'],
+#                     p['market_change']))
 
 def print_random_header():
     print(
@@ -267,6 +323,8 @@ def print_random_tops(sr, top_n):
                 r['n_of_longs'],
                 r['n_of_shorts'],
                 r['total_profit'],
+                r['max_margin_ratio'],
+                r['pmr'],
                 r['max_dd'],
                 r['annual_return'],
                 r['win_rate'],
@@ -307,6 +365,7 @@ def create_csv_report(sorted_results, filename, header):
                     f"{srl['n_of_longs']}{csvd}"
                     f"{srl['n_of_shorts']}{csvd}"
                     f"{srl['total_profit']}{csvd}"
+                    f"{srl['max_margin_ratio']}{csvd}"
                     f"{srl['max_dd']}{csvd}"
                     f"{srl['annual_return']}{csvd}"
                     f"{srl['win_rate']}{csvd}"
@@ -346,7 +405,7 @@ def get_metrics3(console_output) -> dict:
 
         if 'No trades were made' in line:
             return metrics
-        
+
         if 'InsufficientMargin' in line:
             print(console_output)
             return metrics
@@ -362,37 +421,37 @@ def get_metrics3(console_output) -> dict:
             metrics['total_trades'] = int(split(line))
 
         if 'Total Net Profit' in line:
-            metrics['total_profit'] = round(float(split(line)), 2)
+            metrics['total_profit'] = round(float(split(line)), 1)
 
         if 'Max Drawdown' in line:
-            metrics['max_dd'] = round(float(split(line)), 2)
+            metrics['max_dd'] = round(float(split(line)), 1)
 
         if 'Total Paid Fees' in line:
-            metrics['paid_fees'] = round(float(split(line)), 2)
+            metrics['paid_fees'] = round(float(split(line)), 1)
 
         if 'Annual Return' in line:
-            metrics['annual_return'] = round(float(split(line)), 2)
+            metrics['annual_return'] = round(float(split(line)))
 
         if 'Percent Profitable' in line:
             metrics['win_rate'] = int(split(line))
 
         if 'Serenity Index' in line:
-            metrics['serenity'] = round(float(split(line)), 2)
+            metrics['serenity'] = round(float(split(line)))
 
         if 'Sharpe Ratio' in line:
-            metrics['sharpe'] = round(float(split(line)), 2)
+            metrics['sharpe'] = round(float(split(line)))
 
         if 'Calmar Ratio' in line:
-            metrics['calmar'] = round(float(split(line)), 2)
+            metrics['calmar'] = round(float(split(line)))
 
         if 'Sortino Ratio' in line:
-            metrics['sortino'] = round(float(split(line)), 2)
+            metrics['sortino'] = round(float(split(line)))
 
         if 'Smart Sharpe' in line:
-            metrics['smart_sharpe'] = round(float(split(line)), 2)
+            metrics['smart_sharpe'] = round(float(split(line)), 1)
 
         if 'Smart Sortino' in line:
-            metrics['smart_sortino'] = round(float(split(line)), 2)
+            metrics['smart_sortino'] = round(float(split(line)), 1)
 
         if 'Winning Streak' in line:
             metrics['win_strk'] = int(split(line))
@@ -401,8 +460,7 @@ def get_metrics3(console_output) -> dict:
             metrics['lose_strk'] = int(split(line))
 
         if 'Longs | Shorts' in line:
-            metrics['n_of_longs'], metrics['n_of_shorts'] = split_n_of_longs_shorts(
-                line)
+            metrics['n_of_longs'], metrics['n_of_shorts'] = split_n_of_longs_shorts(line)
 
         if 'Largest Winning Trade' in line:
             metrics['largest_win'] = round(float(split(line)), 2)
@@ -418,13 +476,27 @@ def get_metrics3(console_output) -> dict:
 
         if 'Market Change' in line:
             metrics['market_change'] = round(float(split(line)), 2)
-            
+
         if 'Dna String:' in line:
             metrics['dna'] = split_dna_string(line)
-        
+
         if 'Sequential Hps' in line:
             metrics['seq_hps'] = split(line)
-            
+
+        if 'Max. Margin Ratio ' in line and '|' in line:
+            mr = round(float(split(line)), 2)
+            metrics['max_margin_ratio'] = mr + 100 if mr < 0 else mr
+
+        if '"max_margin_ratio":' in line:
+            mr = round(float(split(line)), 2)
+            metrics['max_margin_ratio'] = mr + 100 if mr < 0 else mr
+
+        if 'Minimum Margin ' in line and '|' in line:
+            metrics['min_margin'] = round(float(split(line)), 2)
+        
+        if metrics['total_profit'] and metrics['max_margin_ratio']:
+            metrics['pmr'] = round(metrics['total_profit'] / metrics['max_margin_ratio'], 2)
+
     return metrics
 
 
