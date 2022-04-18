@@ -32,7 +32,7 @@ class Refine:
         self.dd = dd
         self.mr = mr
         self.sortby = sortby
-        self.fr = '--full-reports' if full_reports else ''
+        self.fr = ' --full-reports' if full_reports else ''
         self.jessetkdir = datadir
         self.anchor = 'DNA!'
         self.sort_by = {'serenity': 12, 'sharpe': 13, 'calmar': 14}
@@ -86,12 +86,12 @@ class Refine:
                     # print(f'parameters: {hps}')
 
                     commands.append(
-                        f'jesse-tk backtest {self.start_date} {self.finish_date} --seq {hps} {self.fr}'
+                        f'jesse-tk backtest {self.start_date} {self.finish_date} --seq {hps}{self.fr}'
                         )
 
                     index += 1
                     iters -= 1
-
+            # print(f'commands: {commands}')
             processes = [Popen(cmd, shell=True, stdout=PIPE) for cmd in commands]
 
             # wait for completion
@@ -102,7 +102,10 @@ class Refine:
                 (output, err) = p.communicate()
                 # debug
                 # print(output.decode('utf-8'))
-                # print(err.decode('utf-8'))
+                try:
+                    print(err.decode('utf-8'))
+                except:
+                    pass
                 # exit()
                 iters_completed += 1
 

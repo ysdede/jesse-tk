@@ -70,7 +70,13 @@ def cli() -> None:
 @click.argument('treshold1', required=False, type=float, default=0.001)
 @click.argument('treshold2', required=False, type=float, default=90.0)
 def optuna_pick(treshold1: float, treshold2:float) -> None:
+    """
+    Pick best parameters for a strategy
+
+    Parameter1 is the treshold for the first parameter (Profit for k series strategies)
     
+    Parameter2 is the treshold for the second parameter (Max. Margin Ratio for k series strategies)
+    """
     os.chdir(os.getcwd())
     validate_cwd()
 
@@ -231,7 +237,11 @@ def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: in
 def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: int, dd: int, mr:int, sortby:str, full_reports) -> None:
     """
     backtest all Sequential candidate Optuna parameters.
-    Enter in "YYYY-MM-DD" "YYYY-MM-DD"
+    Options: --dd, --mr, --sortby [sharpe, pmr, calmar]
+
+    eg. 
+
+    jesse-tk refine-seq SEQ-file.py 2022-02-10 2022-04-12 --sortby pmr --cpu 4 --mr 40 --dd -10
     """
     os.chdir(os.getcwd())
     validate_cwd()
