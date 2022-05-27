@@ -366,6 +366,8 @@ def create_csv_report(sorted_results, filename, header):
                     f"{srl['n_of_shorts']}{csvd}"
                     f"{srl['total_profit']}{csvd}"
                     f"{srl['max_margin_ratio']}{csvd}"
+                    f"{srl['pmr']}{csvd}"
+                    f"{srl['lpr']}{csvd}"
                     f"{srl['max_dd']}{csvd}"
                     f"{srl['annual_return']}{csvd}"
                     f"{srl['win_rate']}{csvd}"
@@ -496,6 +498,12 @@ def get_metrics3(console_output) -> dict:
         
         if metrics['total_profit'] and metrics['max_margin_ratio']:
             metrics['pmr'] = round(metrics['total_profit'] / metrics['max_margin_ratio'], 2)
+        
+        if 'Max. LP Ratio ' in line and '|' in line:
+            metrics['lpr'] = round(float(split(line)), 2)
+
+        if '"max_lp_rate":' in line:
+            metrics['lpr'] = round(float(split(line)), 2)
 
     return metrics
 

@@ -16,10 +16,10 @@ from jessetk.Vars import datadir
 from jessetk.Vars import refine_file_header
 import json
 from millify import millify
-
+from importlib.metadata import version
 
 class Refine:
-    def __init__(self, hp_py_file, start_date, finish_date, eliminate, cpu, dd, mr, sortby, full_reports):
+    def __init__(self, hp_py_file, start_date, finish_date, eliminate, cpu, dd, mr, lpr, sortby='sharpe', full_reports=False):
 
         import signal
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -31,7 +31,10 @@ class Refine:
         self.eliminate = eliminate
         self.dd = dd
         self.mr = mr
+        self.lpr = lpr
         self.sortby = sortby
+        # Minimum is better for max lp rate, so we need to reverse the sort
+        self.sort_reverse = sortby != 'lpr'
         self.fr = ' --full-reports' if full_reports else ''
         self.jessetkdir = datadir
         self.anchor = 'DNA!'
@@ -118,7 +121,7 @@ class Refine:
                 if metric not in results:
                     results.append(deepcopy(metric))
 
-                sorted_results_prelist = sorted(results, key=lambda x: float(x[self.sortby]), reverse=True)
+                sorted_results_prelist = sorted(results, key=lambda x: float(x[self.sortby]), reverse=self.sort_reverse)
                 # print(f'Sorted results: {sorted_results_prelist}')
                 # print('Sorted results', len(sorted_results_prelist))
 
@@ -138,8 +141,10 @@ class Refine:
                 eta_formatted = strftime("%H:%M:%S", gmtime(eta))
 
                 print(
-                    f'{index}/{self.n_of_params}\teta: {eta_formatted} | {self.pair} '
-                    f'| {self.timeframe} | {self.start_date} -> {self.finish_date}')
+                    f'{index}/{self.n_of_params}\teta: {eta_formatted} | {self.pair} |'
+                    f' {self.timeframe} | {self.start_date} -> {self.finish_date} |'
+                    f" Sort by {self.sortby} {'reversed' if self.sort_reverse else ''} |"
+                    f" Filters: MR% {self.mr} | DD% {self.dd} | LPR {self.lpr} | Ver. {version('jesse-tk')}")
 
                 self.print_tops_formatted()
 
@@ -153,7 +158,7 @@ class Refine:
         candidates = {
             r['dna']: r['dna']
             for r in self.sorted_results
-            if r['max_dd'] > self.dd and r['max_margin_ratio'] < self.mr
+            if r['max_dd'] > self.dd and r['max_margin_ratio'] < self.mr and r['lpr'] < self.lpr
         }
 
         print(f'\n\nCandidates: {len(candidates)}')
@@ -199,6 +204,11 @@ class Refine:
 
         for r in sorted_results[:n]:
             p = r
+            # Replace None with empty string
+            for k, v in p.items():
+                if v is None:
+                    p[k] = ''
+
             # p = {}
             # # make a copy of r dict but round values if they are floats
             # for k, v in r.items():
@@ -229,6 +239,7 @@ class Refine:
                     p['total_profit'],
                     p['max_margin_ratio'],
                     p['pmr'],
+                    p['lpr'],
                     p['max_dd'],
                     p['annual_return'],
                     p['win_rate'],

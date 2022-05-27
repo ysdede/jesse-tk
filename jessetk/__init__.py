@@ -1,5 +1,17 @@
 import os
 import sys
+from importlib.metadata import version
+print(f"jesse-tk {version('jesse-tk')}")
+# fix directory issue
+sys.path.insert(0, os.getcwd())
+
+ls = os.listdir('.')
+is_jesse_project = 'strategies' in ls and 'config.py' in ls and 'storage' in ls and 'routes.py' in ls
+if not is_jesse_project:
+    print('Current directory is not a Jesse CLI project. You must run commands from the root of a Jesse project.')
+    # os.exit(1)
+    exit()
+
 from multiprocessing import cpu_count
 from pydoc import locate
 from timeit import default_timer as timer
@@ -11,13 +23,6 @@ from jesse.services.selectors import get_exchange
 import json as json_lib
 from jessetk import utils
 from jessetk.Vars import initial_test_message
-
-# fix directory issue
-sys.path.insert(0, os.getcwd())
-
-ls = os.listdir('.')
-is_jesse_project = 'strategies' in ls and 'config.py' in ls and 'storage' in ls and 'routes.py' in ls
-
 
 def inject_local_config() -> None:
     """
@@ -230,18 +235,21 @@ def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: in
     '--mr', default=90, show_default=True,
     help='Maximum margin ratio limit for filtering results.')
 @click.option(
+    '--lpr', default=1.2, show_default=True,
+    help='Maximum liquidation price ratio limit for filtering results.')
+@click.option(
     '--sortby', default='sharpe', show_default=True,
     help='Metric to sort results. Alternatives: pmr, calmar')
 @click.option('--full-reports/--no-full-reports', default=False,
               help="Generates QuantStats' HTML output with metrics reports like Sharpe ratio, Win rate, Volatility, etc., and batch plotting for visualizing performance, drawdowns, rolling statistics, monthly returns, etc.")
-def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: int, dd: int, mr:int, sortby:str, full_reports) -> None:
+def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: int, dd: int, mr:int, lpr:float, sortby:str, full_reports) -> None:
     """
     backtest all Sequential candidate Optuna parameters.
     Options: --dd, --mr, --sortby [sharpe, pmr, calmar]
 
     eg. 
 
-    jesse-tk refine-seq SEQ-file.py 2022-02-10 2022-04-12 --sortby pmr --cpu 4 --mr 40 --dd -10
+    jesse-tk refine-seq SEQ-file.py 2022-02-10 2022-04-12 --sortby pmr --cpu 4 --mr 40 --dd -10 --lpr 0.7
     """
     os.chdir(os.getcwd())
     validate_cwd()
@@ -258,7 +266,10 @@ def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu:
 
         print('Last hp file:', hp_file)
 
-    if sortby not in ['sharpe', 'pmr', 'calmar']:  # TODO: Extend this list
+    sort_options = ['sharpe', 'pmr', 'calmar', 'lpr']  # TODO: Move to VARS
+    if sortby not in sort_options:
+        print('Available sortby options:', sort_options)
+        print('Defaulting to sharpe')
         sortby = 'sharpe'
 
     if not eliminate:
@@ -275,7 +286,7 @@ def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu:
 
     from jessetk.RefineSeq import Refine
     r = Refine(hp_file, start_date, finish_date, eliminate,
-               max_cpu, dd=dd, mr=mr, sortby=sortby, full_reports=full_reports)
+               max_cpu, dd=dd, mr=mr, lpr=lpr, sortby=sortby, full_reports=full_reports)
     r.run()
 
 

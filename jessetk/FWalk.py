@@ -102,6 +102,7 @@ class FWalk:
                     r['total_profit'],
                     r['max_margin_ratio'],
                     r['pmr'],
+                    r['lpr'],
                     r['max_dd'],
                     r['annual_return'],
                     r['win_rate'],

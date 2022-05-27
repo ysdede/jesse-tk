@@ -15,6 +15,7 @@ Metrics = {
     'max_dd': 0.0,
     'annual_return': 0.0,
     'max_margin_ratio': None,
+    'lpr': None,
     'pmr': None,
     'min_margin': None,
     'paid_fees': 0.0,
@@ -49,6 +50,7 @@ refine_file_header = ['Pair',
                       'Total Net Profit',
                       'Max. MR',
                       'PMR',
+                      'Max. LP Rate',
                       'Max.DD',
                       'Annual Profit',
                       'Winrate',
@@ -71,6 +73,7 @@ refine_console_header1 = ['Dna',
                           'Total Net',
                           'Max.',
                           'PMR',
+                          'LP',
                           'Max.',
                           'Annual',
                           'Win',
@@ -92,6 +95,7 @@ refine_console_header2 = ['String',
                           'Profit %',
                           'Margin %',
                           '%',
+                          'Rate',
                           'DD %',
                           'Return %',
                           'Rate %',
@@ -107,7 +111,7 @@ refine_console_header2 = ['String',
                           'Fees',
                           'Change %']
 
-refine_console_formatter = '{: <22} {: <6} {: <5} {: <7}{: <12} {: <8} {: <8} {: <8} {: <10} {: <8} {: <8} {: <8} {: <8} {: <8} {: <8} ' \
+refine_console_formatter = '{: <22} {: <6} {: <5} {: <7}{: <12} {: <8} {: <8} {: <8} {: <8} {: <10} {: <8} {: <8} {: <8} {: <8} {: <8} {: <8} ' \
                            '{: <12} {: <12} {: <10} {: <8} {: <8} {: <8}'
 
 random_file_header = ['Pair',  # TODO Pairs for multi routes?
@@ -121,6 +125,7 @@ random_file_header = ['Pair',  # TODO Pairs for multi routes?
                       'Total Net Profit',
                       'Max. MR',
                       'PMR',
+                      'Max. LP Rate',
                       'Max. DD',
                       'Annual Profit',
                       'Winrate',
@@ -143,7 +148,8 @@ random_console_header1 = ['Start',
                           'Shorts',
                           'Total Net',
                           'Max.',
-                            'PMR',
+                          'PMR',
+                          'LP',
                           'Max.',
                           'Annual',
                           'Win',
@@ -166,6 +172,7 @@ random_console_header2 = ['Date',
                           'Profit %',
                           'Margin %',
                           '%',
+                          'Rate',
                           'DD %',
                           'Return %',
                           'Rate %',
@@ -181,5 +188,5 @@ random_console_header2 = ['Date',
                           'Fees',
                           'Change %']
 
-random_console_formatter = '{: <12} {: <12} {: <6} {: <5} {: <7}{: <12} {: <8} {: <8} {: <8} {: <10} {: <8} {: <8} {: <8} {: <8} {: <8} {: <8} ' \
+random_console_formatter = '{: <12} {: <12} {: <6} {: <5} {: <7}{: <12} {: <8} {: <8} {: <8} {: <8} {: <10} {: <8} {: <8} {: <8} {: <8} {: <8} {: <8} ' \
                            '{: <12} {: <12} {: <10} {: <8} {: <8} {: <8}'

@@ -192,6 +192,11 @@ class PureRefine:
 
         for r in sorted_results[:n]:
             p = r
+            # Replace None with empty string
+            for k, v in p.items():
+                if v is None:
+                    p[k] = ''
+
             # p = {}
             # # make a copy of r dict but round values if they are floats
             # for k, v in r.items():
@@ -222,6 +227,7 @@ class PureRefine:
                     p['total_profit'],
                     p['max_margin_ratio'],
                     p['pmr'],
+                    p['lpr'],
                     p['max_dd'],
                     p['annual_return'],
                     p['win_rate'],
