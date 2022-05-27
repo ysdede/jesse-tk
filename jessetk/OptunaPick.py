@@ -20,9 +20,11 @@ except:
 
 
 class OptunaPick:
-    def __init__(self, t1=0.001, t2=-50):
+    def __init__(self, t1=0.001, t2=-90, t3=1):
         self.t1 = t1
         self.t2 = t2
+        self.t3 = t3
+
         try:
             self.db_host = config['env']['databases']['optuna_db_host']
             self.db_port = config['env']['databases']['optuna_db_port']
@@ -34,17 +36,17 @@ class OptunaPick:
                 'Check your config.py file for optuna database settings! example configuration:')
             print("""
                 'databases': {
-                'postgres_host': '192.168.1.27',
+                'postgres_host': '127.0.0.1',
                 'postgres_name': 'jesse_db',
                 'postgres_port': 5432,
                 'postgres_username': 'jesse_user',
-                'postgres_password': 'password@€',
+                'postgres_password': 'password',
                 
-                'optuna_db_host': '192.168.1.27',
+                'optuna_db_host': '127.0.0.1',
                 'optuna_db_port': 5432,
                 'optuna_db': 'optuna_db',
                 'optuna_user': 'optuna_user',
-                'optuna_password': 'password€',
+                'optuna_password': 'password',
                 },
             """)
             exit()
@@ -102,7 +104,7 @@ class OptunaPick:
                 continue
 
             # Make this part customizable for each strategy
-            # It's hardcoded for Gambler's Conceit for now.
+            # It's hardcoded for k series for now.
 
             # Total profit
             if trial.values[0] < self.t1:
@@ -111,6 +113,12 @@ class OptunaPick:
             # Max DD
             if trial.values[1] > self.t2:
                 continue
+            
+            try:
+                if trial.user_attrs['lpr1'] > self.t3:
+                    continue
+            except:
+                pass
 
             total_profit = trial.values[0]
             max_mr = trial.values[1]
@@ -147,7 +155,7 @@ class OptunaPick:
                 candidates[hash] = rounded_params
                 # print(type(trial.values), trial.values)
 
-                # This is also hardcoded for Gambler's Conceit for now.
+                # This is also hardcoded for k series for now.
                 result_line = [
                     trial.number, f"'{hash}'",
                     *trial.values,

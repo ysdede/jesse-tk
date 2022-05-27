@@ -74,13 +74,16 @@ def cli() -> None:
 @cli.command()
 @click.argument('treshold1', required=False, type=float, default=0.001)
 @click.argument('treshold2', required=False, type=float, default=90.0)
-def optuna_pick(treshold1: float, treshold2:float) -> None:
+@click.argument('treshold3', required=False, type=float, default=1.0)
+def optuna_pick(treshold1: float, treshold2:float, treshold3:float) -> None:
     """
     Pick best parameters for a strategy
 
     Parameter1 is the treshold for the first parameter (Profit for k series strategies)
     
     Parameter2 is the treshold for the second parameter (Max. Margin Ratio for k series strategies)
+
+    Parameter3 is the treshold for the third parameter (Max. liq price Ratio for k series strategies)
     """
     os.chdir(os.getcwd())
     validate_cwd()
@@ -89,7 +92,7 @@ def optuna_pick(treshold1: float, treshold2:float) -> None:
     print(f"treshold2: {treshold2}")
 
     from jessetk.OptunaPick import OptunaPick
-    op = OptunaPick(t1=treshold1, t2=treshold2)
+    op = OptunaPick(t1=treshold1, t2=treshold2, t3=treshold3)
     op.dump_best_parameters()
 
 @cli.command()
