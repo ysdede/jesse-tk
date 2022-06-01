@@ -241,11 +241,17 @@ def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: in
     '--lpr', default=1.2, show_default=True,
     help='Maximum liquidation price ratio limit for filtering results.')
 @click.option(
+'--sharpe', default=-10.0, show_default=True,
+help='Minimum sharpe ratio limit for filtering results.')
+@click.option(
+    '--profit', default=-100, show_default=True,
+    help='Minimum profit for filtering results.')
+@click.option(
     '--sortby', default='sharpe', show_default=True,
     help='Metric to sort results. Alternatives: pmr, calmar')
 @click.option('--full-reports/--no-full-reports', default=False,
               help="Generates QuantStats' HTML output with metrics reports like Sharpe ratio, Win rate, Volatility, etc., and batch plotting for visualizing performance, drawdowns, rolling statistics, monthly returns, etc.")
-def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: int, dd: int, mr:int, lpr:float, sortby:str, full_reports) -> None:
+def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: int, dd: int, mr:int, lpr:float, sharpe:float, profit:float, sortby:str, full_reports) -> None:
     """
     backtest all Sequential candidate Optuna parameters.
     Options: --dd, --mr, --sortby [sharpe, pmr, calmar]
@@ -269,7 +275,7 @@ def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu:
 
         print('Last hp file:', hp_file)
 
-    sort_options = ['sharpe', 'pmr', 'calmar', 'lpr']  # TODO: Move to VARS
+    sort_options = ['sharpe', 'pmr', 'calmar', 'lpr', 'profit']  # TODO: Move to VARS
     if sortby not in sort_options:
         print('Available sortby options:', sort_options)
         print('Defaulting to sharpe')
@@ -289,7 +295,7 @@ def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu:
 
     from jessetk.RefineSeq import Refine
     r = Refine(hp_file, start_date, finish_date, eliminate,
-               max_cpu, dd=dd, mr=mr, lpr=lpr, sortby=sortby, full_reports=full_reports)
+               max_cpu, dd=dd, mr=mr, lpr=lpr, sharpe=sharpe, profit=profit, sortby=sortby, full_reports=full_reports)
     r.run()
 
 

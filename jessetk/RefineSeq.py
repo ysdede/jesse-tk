@@ -19,7 +19,7 @@ from millify import millify
 from importlib.metadata import version
 
 class Refine:
-    def __init__(self, hp_py_file, start_date, finish_date, eliminate, cpu, dd, mr, lpr, sortby='sharpe', full_reports=False):
+    def __init__(self, hp_py_file, start_date, finish_date, eliminate, cpu, dd, mr, lpr, sharpe, profit, sortby='sharpe', full_reports=False):
 
         import signal
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -32,7 +32,9 @@ class Refine:
         self.dd = dd
         self.mr = mr
         self.lpr = lpr
-        self.sortby = sortby
+        self.sharpe = sharpe
+        self.profit = profit
+        self.sortby = sortby.replace('profit', 'total_profit')
         # Minimum is better for max lp rate, so we need to reverse the sort
         self.sort_reverse = sortby != 'lpr'
         self.fr = ' --full-reports' if full_reports else ''
@@ -144,9 +146,9 @@ class Refine:
                     f'{index}/{self.n_of_params}\teta: {eta_formatted} | {self.pair} |'
                     f' {self.timeframe} | {self.start_date} -> {self.finish_date} |'
                     f" Sort by {self.sortby} {'reversed' if self.sort_reverse else ''} |"
-                    f" Filters: MR% {self.mr} | DD% {self.dd} | LPR {self.lpr} | Ver. {version('jesse-tk')}")
+                    f" Filters: MR% {self.mr}, DD% {self.dd}, LPR {self.lpr}, Sharpe {self.sharpe}, Profit: {self.profit} | Ver. {version('jesse-tk')}")
 
-                self.print_tops_formatted()
+                self.print_tops_formatted(n=30)
 
         # if self.eliminate:
         #     self.save_dnas(self.sorted_results, self.dna_py_file)
@@ -158,7 +160,7 @@ class Refine:
         candidates = {
             r['dna']: r['dna']
             for r in self.sorted_results
-            if r['max_dd'] > self.dd and r['max_margin_ratio'] < self.mr and r['lpr'] < self.lpr
+            if r['max_dd'] > self.dd and r['max_margin_ratio'] < self.mr and r['lpr'] < self.lpr and r['sharpe'] > self.sharpe and r['total_profit'] > self.profit
         }
 
         print(f'\n\nCandidates: {len(candidates)}')
