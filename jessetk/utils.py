@@ -241,17 +241,44 @@ def print_tops_formatted(frmt, header1, header2, tr):
     print('\x1b[0m')
 
     for r in tr:
+        for k, v in r.items():
+                if v is None:
+                    r[k] = ''
+
         print(
             frmt.format(
-                r['dna'], r['total_trades'],
-                r['n_of_longs'], r['n_of_shorts'],
-                r['total_profit'], r['max_dd'],
-                r['annual_return'], r['win_rate'],
-                r['serenity'], r['sharpe'], r['calmar'],
-                r['win_strk'], r['lose_strk'],
-                r['largest_win'], r['largest_lose'],
-                r['n_of_wins'], r['n_of_loses'],
-                r['paid_fees'], r['market_change']))
+                r['dna'],
+                    r['total_trades'],
+                    r['n_of_longs'],
+                    r['n_of_shorts'],
+                    r['total_profit'],
+                    r['max_margin_ratio'],
+                    r['pmr'],
+                    r['lpr'],
+                    r['max_dd'],
+                    r['annual_return'],
+                    r['win_rate'],
+                    r['serenity'],
+                    r['sharpe'],
+                    r['calmar'],
+                    r['win_strk'],
+                    r['lose_strk'],
+                    r['largest_win'],
+                    r['largest_lose'],
+                    r['n_of_wins'],
+                    r['n_of_loses'],
+                    r['paid_fees'],
+                    r['market_change']))
+
+                # r['dna'], r['total_trades'],
+                # r['n_of_longs'], r['n_of_shorts'],
+                # r['total_profit'], r['max_dd'],
+                # r['annual_return'], r['win_rate'],
+                # r['serenity'], r['sharpe'], r['calmar'],
+                # r['win_strk'], r['lose_strk'],
+                # r['largest_win'], r['largest_lose'],
+                # r['n_of_wins'], r['n_of_loses'],
+                # r['paid_fees'], r['market_change']))
 
 # def print_tops_neu(sorted_results=None, n:int = 25):
 #         print(
@@ -315,6 +342,10 @@ def print_random_header():
 
 def print_random_tops(sr, top_n):
     for r in sr[:top_n]:
+        for k, v in r.items():
+                if v is None:
+                    r[k] = ''
+
         print(
             random_console_formatter.format(
                 r['start_date'],
@@ -325,6 +356,7 @@ def print_random_tops(sr, top_n):
                 r['total_profit'],
                 r['max_margin_ratio'],
                 r['pmr'],
+                r['lpr'],
                 r['max_dd'],
                 r['annual_return'],
                 r['win_rate'],
@@ -525,6 +557,6 @@ def remove_file(fn):
     if os.path.exists(fn):
         try:
             os.remove(fn)
-        except:
+        except Exception:
             print(f'Failed to remove file {fn}')
             exit()

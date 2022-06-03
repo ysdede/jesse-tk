@@ -88,6 +88,7 @@ refine_console_header1 = ['Dna',
                           'Losing',
                           'Paid',
                           'Market']
+
 refine_console_header2 = ['String',
                           'Trades',
                           '%',
@@ -112,6 +113,9 @@ refine_console_header2 = ['String',
                           'Change %']
 
 refine_console_formatter = '{: <22} {: <6} {: <5} {: <7}{: <12} {: <8} {: <8} {: <8} {: <8} {: <10} {: <8} {: <8} {: <8} {: <8} {: <8} {: <8} ' \
+                           '{: <12} {: <12} {: <10} {: <8} {: <8} {: <8}'
+
+random_console_formatter = '{: <12} {: <12} {: <6} {: <5} {: <7} {: <12} {: <8} {: <8} {: <8} {: <8} {: <10} {: <8} {: <8} {: <8} {: <8} {: <8} {: <8} ' \
                            '{: <12} {: <12} {: <10} {: <8} {: <8} {: <8}'
 
 random_file_header = ['Pair',  # TODO Pairs for multi routes?
@@ -164,6 +168,7 @@ random_console_header1 = ['Start',
                           'Losing',
                           'Paid',
                           'Market']
+                          
 random_console_header2 = ['Date',
                           'Date',
                           'Trades',
@@ -188,5 +193,3 @@ random_console_header2 = ['Date',
                           'Fees',
                           'Change %']
 
-random_console_formatter = '{: <12} {: <12} {: <6} {: <5} {: <7}{: <12} {: <8} {: <8} {: <8} {: <8} {: <10} {: <8} {: <8} {: <8} {: <8} {: <8} {: <8} ' \
-                           '{: <12} {: <12} {: <10} {: <8} {: <8} {: <8}'

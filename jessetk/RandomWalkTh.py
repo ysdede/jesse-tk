@@ -101,6 +101,8 @@ class RandomWalk:
                     r['n_of_shorts'],
                     r['total_profit'],
                     r['max_margin_ratio'],
+                    r['pmr'],
+                    r['lpr'],
                     r['max_dd'],
                     r['annual_return'],
                     r['win_rate'],
@@ -115,6 +117,28 @@ class RandomWalk:
                     r['n_of_loses'],
                     r['paid_fees'],
                     r['market_change']]  # TODO Make it reusable
+
+                    # r['start_date'],
+                    # r['finish_date'],
+                    # r['total_trades'],
+                    # r['n_of_longs'],
+                    # r['n_of_shorts'],
+                    # r['total_profit'],
+                    # r['max_margin_ratio'],
+                    # r['max_dd'],
+                    # r['annual_return'],
+                    # r['win_rate'],
+                    # r['serenity'],
+                    # r['sharpe'],
+                    # r['calmar'],
+                    # r['win_strk'],
+                    # r['lose_strk'],
+                    # r['largest_win'],
+                    # r['largest_lose'],
+                    # r['n_of_wins'],
+                    # r['n_of_loses'],
+                    # r['paid_fees'],
+                    # r['market_change']
                     r_pd = pd.to_numeric(r_vals_as_list, errors='coerce')
                     res_as_list.append(r_pd)
 
