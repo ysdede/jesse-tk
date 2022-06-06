@@ -536,6 +536,13 @@ def get_metrics3(console_output) -> dict:
 
         if '"max_lp_rate":' in line:
             metrics['lpr'] = round(float(split(line)), 2)
+        
+        if 'Insuff. Margin Count' in line:
+            metrics['insuff_margin_count'] = int(split(line))
+        
+        # If position liquidated and the shared vars dumped to the console, get the last metric.
+        if '"insuff_margin_count":' in line:
+            metrics['insuff_margin_count'] = int(split(line))
 
     return metrics
 

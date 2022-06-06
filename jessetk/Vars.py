@@ -17,6 +17,7 @@ Metrics = {
     'max_margin_ratio': None,
     'lpr': None,
     'pmr': None,
+    'insuff_margin_count': None,
     'min_margin': None,
     'paid_fees': 0.0,
     'win_rate': 0,
