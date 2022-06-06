@@ -247,11 +247,14 @@ help='Minimum sharpe ratio limit for filtering results.')
     '--profit', default=-100, show_default=True,
     help='Minimum profit for filtering results.')
 @click.option(
+    '--imcount', default=100, show_default=True,
+    help='Number of insufficient margin events count for filtering results.')
+@click.option(
     '--sortby', default='sharpe', show_default=True,
     help='Metric to sort results. Alternatives: pmr, calmar')
 @click.option('--full-reports/--no-full-reports', default=False,
               help="Generates QuantStats' HTML output with metrics reports like Sharpe ratio, Win rate, Volatility, etc., and batch plotting for visualizing performance, drawdowns, rolling statistics, monthly returns, etc.")
-def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: int, dd: int, mr:int, lpr:float, sharpe:float, profit:float, sortby:str, full_reports) -> None:
+def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu: int, dd: int, mr:int, lpr:float, sharpe:float, profit:float, imcount:int, sortby:str, full_reports) -> None:
     """
     backtest all Sequential candidate Optuna parameters.
     Options: --dd, --mr, --sortby [sharpe, pmr, calmar]
@@ -295,7 +298,7 @@ def refine_seq(hp_file, start_date: str, finish_date: str, eliminate: bool, cpu:
 
     from jessetk.RefineSeq import Refine
     r = Refine(hp_file, start_date, finish_date, eliminate,
-               max_cpu, dd=dd, mr=mr, lpr=lpr, sharpe=sharpe, profit=profit, sortby=sortby, full_reports=full_reports)
+               max_cpu, dd=dd, mr=mr, lpr=lpr, sharpe=sharpe, profit=profit, imcount=imcount, sortby=sortby, full_reports=full_reports)
     r.run()
 
 

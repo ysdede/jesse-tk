@@ -19,7 +19,7 @@ from millify import millify
 from importlib.metadata import version
 
 class Refine:
-    def __init__(self, hp_py_file, start_date, finish_date, eliminate, cpu, dd, mr, lpr, sharpe, profit, sortby='sharpe', full_reports=False):
+    def __init__(self, hp_py_file, start_date, finish_date, eliminate, cpu, dd, mr, lpr, sharpe, profit, imcount, sortby='sharpe', full_reports=False):
 
         import signal
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -34,6 +34,7 @@ class Refine:
         self.lpr = lpr
         self.sharpe = sharpe
         self.profit = profit
+        self.imcount = imcount
         self.sortby = sortby.replace('profit', 'total_profit')
         # Minimum is better for max lp rate, so we need to reverse the sort
         self.sort_reverse = sortby != 'lpr'
@@ -160,7 +161,7 @@ class Refine:
         candidates = {
             r['dna']: r['dna']
             for r in self.sorted_results
-            if r['max_dd'] > self.dd and r['max_margin_ratio'] < self.mr and r['lpr'] < self.lpr and r['sharpe'] > self.sharpe and r['total_profit'] > self.profit
+            if r['max_dd'] > self.dd and r['max_margin_ratio'] < self.mr and r['lpr'] < self.lpr and r['sharpe'] > self.sharpe and r['total_profit'] > self.profit and r['insuff_margin_count'] <= self.imcount
         }
 
         print(f'\n\nCandidates: {len(candidates)}')
