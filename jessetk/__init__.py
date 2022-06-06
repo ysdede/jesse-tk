@@ -235,13 +235,13 @@ def refine(dna_file, start_date: str, finish_date: str, eliminate: bool, cpu: in
     '--dd', default=-90, show_default=True,
     help='Maximum drawdown limit for filtering results. Use negative values.')
 @click.option(
-    '--mr', default=90, show_default=True,
+    '--mr', default=200, show_default=True,
     help='Maximum margin ratio limit for filtering results.')
 @click.option(
-    '--lpr', default=1.2, show_default=True,
+    '--lpr', default=100, show_default=True,
     help='Maximum liquidation price ratio limit for filtering results.')
 @click.option(
-'--sharpe', default=-10.0, show_default=True,
+'--sharpe', default=-100.0, show_default=True,
 help='Minimum sharpe ratio limit for filtering results.')
 @click.option(
     '--profit', default=-100, show_default=True,
