@@ -52,6 +52,7 @@ refine_file_header = ['Pair',
                       'Max. MR',
                       'PMR',
                       'Max. LP Rate',
+                      'Insf. Margin Count',
                       'Max.DD',
                       'Annual Profit',
                       'Winrate',
@@ -75,6 +76,7 @@ refine_console_header1 = ['Dna',
                           'Max.',
                           'PMR',
                           'LP',
+                          'Insff.',
                           'Max.',
                           'Annual',
                           'Win',
@@ -98,6 +100,7 @@ refine_console_header2 = ['String',
                           'Margin %',
                           '%',
                           'Rate',
+                          'M.Count',
                           'DD %',
                           'Return %',
                           'Rate %',
@@ -113,10 +116,10 @@ refine_console_header2 = ['String',
                           'Fees',
                           'Change %']
 
-refine_console_formatter = '{: <22} {: <6} {: <5} {: <7}{: <12} {: <8} {: <8} {: <8} {: <8} {: <10} {: <8} {: <8} {: <8} {: <8} {: <8} {: <8} ' \
+refine_console_formatter = '{: <22} {: <6} {: <5} {: <7}{: <12} {: <8} {: <8} {: <8} {: <8} {: <8} {: <10} {: <8} {: <8} {: <8} {: <8} {: <8} {: <8} ' \
                            '{: <12} {: <12} {: <10} {: <8} {: <8} {: <8}'
 
-random_console_formatter = '{: <12} {: <12} {: <6} {: <5} {: <7} {: <12} {: <8} {: <8} {: <8} {: <8} {: <10} {: <8} {: <8} {: <8} {: <8} {: <8} {: <8} ' \
+random_console_formatter = '{: <12} {: <12} {: <6} {: <5} {: <7} {: <12} {: <8} {: <8} {: <8} {: <8} {: <8} {: <10} {: <8} {: <8} {: <8} {: <8} {: <8} {: <8} ' \
                            '{: <12} {: <12} {: <10} {: <8} {: <8} {: <8}'
 
 random_file_header = ['Pair',  # TODO Pairs for multi routes?
@@ -131,6 +134,7 @@ random_file_header = ['Pair',  # TODO Pairs for multi routes?
                       'Max. MR',
                       'PMR',
                       'Max. LP Rate',
+                      'Insf. Margin Count',
                       'Max. DD',
                       'Annual Profit',
                       'Winrate',
@@ -155,6 +159,7 @@ random_console_header1 = ['Start',
                           'Max.',
                           'PMR',
                           'LP',
+                          'Insff.',
                           'Max.',
                           'Annual',
                           'Win',
@@ -179,6 +184,7 @@ random_console_header2 = ['Date',
                           'Margin %',
                           '%',
                           'Rate',
+                          'M.Count',
                           'DD %',
                           'Return %',
                           'Rate %',

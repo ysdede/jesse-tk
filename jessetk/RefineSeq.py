@@ -242,6 +242,7 @@ class Refine:
                     p['max_margin_ratio'],
                     p['pmr'],
                     p['lpr'],
+                    p['insuff_margin_count'],
                     p['max_dd'],
                     p['annual_return'],
                     p['win_rate'],

@@ -255,6 +255,7 @@ def print_tops_formatted(frmt, header1, header2, tr):
                     r['max_margin_ratio'],
                     r['pmr'],
                     r['lpr'],
+                    r['insuff_margin_count'],
                     r['max_dd'],
                     r['annual_return'],
                     r['win_rate'],
@@ -357,6 +358,7 @@ def print_random_tops(sr, top_n):
                 r['max_margin_ratio'],
                 r['pmr'],
                 r['lpr'],
+                r['insuff_margin_count'],
                 r['max_dd'],
                 r['annual_return'],
                 r['win_rate'],
@@ -400,6 +402,7 @@ def create_csv_report(sorted_results, filename, header):
                     f"{srl['max_margin_ratio']}{csvd}"
                     f"{srl['pmr']}{csvd}"
                     f"{srl['lpr']}{csvd}"
+                    f"{srl['insuff_margin_count']}{csvd}"
                     f"{srl['max_dd']}{csvd}"
                     f"{srl['annual_return']}{csvd}"
                     f"{srl['win_rate']}{csvd}"
