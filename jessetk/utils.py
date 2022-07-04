@@ -473,22 +473,22 @@ def get_metrics3(console_output) -> dict:
             metrics['win_rate'] = int(split(line))
 
         if 'Serenity Index' in line:
-            metrics['serenity'] = round(float(split(line)))
+            metrics['serenity'] = float(split(line))  # TODO: Why we round? see: "ValueError: cannot convert float NaN to integer"
 
         if 'Sharpe Ratio' in line:
-            metrics['sharpe'] = round(float(split(line)))
+            metrics['sharpe'] = float(split(line))
 
         if 'Calmar Ratio' in line:
-            metrics['calmar'] = round(float(split(line)))
+            metrics['calmar'] = float(split(line))
 
         if 'Sortino Ratio' in line:
-            metrics['sortino'] = round(float(split(line)))
+            metrics['sortino'] = float(split(line))
 
         if 'Smart Sharpe' in line:
-            metrics['smart_sharpe'] = round(float(split(line)), 1)
+            metrics['smart_sharpe'] = round(float(split(line)), 2)
 
         if 'Smart Sortino' in line:
-            metrics['smart_sortino'] = round(float(split(line)), 1)
+            metrics['smart_sortino'] = round(float(split(line)), 2)
 
         if 'Winning Streak' in line:
             metrics['win_strk'] = int(split(line))
