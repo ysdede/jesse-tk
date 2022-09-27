@@ -14,7 +14,7 @@ Metrics = {
     'total_profit': 0.0,
     'max_dd': 0.0,
     'annual_return': 0.0,
-    'max_margin_ratio': None,
+    'max_margin_ratio': 0.0,
     'lpr': None,
     'pmr': None,
     'insuff_margin_count': None,
